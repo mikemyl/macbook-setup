@@ -1,0 +1,40 @@
+---
+# Environment configuration
+# Sets environment variables for GUI apps via LaunchAgent
+# Shell sessions get these from .zshrc
+
+- name: Create LaunchAgents directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents"
+    state: directory
+    mode: '0755'
+
+- name: Install environment LaunchAgent
+  ansible.builtin.template:
+    src: templates/com.user.environment.plist.j2
+    dest: "{{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/com.user.environment.plist"
+    mode: '0644'
+  register: launchagent_installed
+
+- name: Unload old LaunchAgent if exists
+  ansible.builtin.command:
+    cmd: launchctl unload {{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/com.user.environment.plist
+  when: launchagent_installed.changed
+  changed_when: true
+  failed_when: false
+
+- name: Load environment LaunchAgent
+  ansible.builtin.command:
+    cmd: launchctl load {{ ansible_facts['env']['HOME'] }}/Library/LaunchAgents/com.user.environment.plist
+  when: launchagent_installed.changed
+  changed_when: true
+
+- name: Set environment variables immediately
+  ansible.builtin.shell:
+    cmd: |
+      {% for var, path in env_vars_macos.items() %}
+      launchctl setenv {{ var }} "{{ path }}"
+      {% endfor %}
+      launchctl setenv PATH {{ extra_path_dirs_macos | join(':') }}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+  when: launchagent_installed.changed
+  changed_when: true

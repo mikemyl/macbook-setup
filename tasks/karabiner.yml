@@ -1,0 +1,14 @@
+---
+# Karabiner-Elements configuration
+
+- name: Create karabiner config directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/.config/karabiner"
+    state: directory
+    mode: '0755'
+
+- name: Deploy karabiner.json
+  ansible.builtin.copy:
+    src: templates/karabiner.json
+    dest: "{{ ansible_facts['env']['HOME'] }}/.config/karabiner/karabiner.json"
+    mode: '0644'

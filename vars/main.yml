@@ -1,0 +1,97 @@
+---
+# Directories
+src_dir: "{{ ansible_facts['env']['HOME'] }}/src"
+
+# Oh My Zsh
+omz_install_url: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
+omz_plugins:
+  - name: zsh-autosuggestions
+    repo: "https://github.com/zsh-users/zsh-autosuggestions"
+  - name: zsh-syntax-highlighting
+    repo: "https://github.com/zsh-users/zsh-syntax-highlighting"
+
+# Homebrew
+homebrew_taps:
+  - chipmk/tap
+  - common-fate/granted
+  - goreleaser/tap
+  - hashicorp/tap
+
+homebrew_packages:
+  - ansible
+  - bat
+  - caddy
+  - chipmk/tap/docker-mac-net-connect
+  - chruby
+  - common-fate/granted/granted
+  - curl
+  - doctl
+  - docutils
+  - fd
+  - fzf
+  - gh
+  - git
+  - go
+  - golang-migrate
+  - googletest
+  - goreleaser/tap/goreleaser
+  - hashicorp/tap/terraform
+  - hugo
+  - jq
+  - just
+  - libpq
+  - lsd
+  - mysql
+  - neovim
+  - nmap
+  - perl
+  - pipx
+  - protobuf@29
+  - pyenv
+  - python-setuptools
+  - python@3.12
+  - qpdf
+  - qrencode
+  - ripgrep
+  - ruby-install
+  - telnet
+  - terraform-docs
+  - terragrunt
+  - tesseract
+  - tflint
+  - the_silver_searcher
+  - tmux
+  - tree
+  - trivy
+  - universal-ctags
+  - uv
+  - zeromq
+  - rbenv
+  - ruby-build
+
+homebrew_casks:
+  - bitwarden
+  - brave-browser
+  - jetbrains-toolbox
+  - jumpcut
+  - neovide
+  - ngrok
+
+# Casks that require sudo for .pkg installation (installed separately)
+homebrew_casks_sudo:
+  - karabiner-elements
+
+# Fonts (manually installed - not in Homebrew)
+monaco_nerd_font_url: "https://github.com/thep0y/monaco-nerd-font/releases/download/v0.2.1/MonacoNerdFont.zip"
+
+# Environment variables - set via LaunchAgent for GUI apps and .zshrc for shell
+env_vars_macos:
+  SSH_AUTH_SOCK: "{{ ansible_facts['env']['HOME'] }}/.bitwarden-ssh-agent.sock"
+
+# Additional paths to add to PATH
+extra_path_dirs_macos:
+  - "{{ ansible_facts['env']['HOME'] }}/go/bin"
+  - "{{ ansible_facts['env']['HOME'] }}/.local/bin"
+
+# Git repositories to clone (requires SSH keys to be set up)
+git_repos: []

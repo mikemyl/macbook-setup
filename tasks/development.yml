@@ -1,0 +1,33 @@
+---
+# Development setup
+
+- name: Create src directory
+  ansible.builtin.file:
+    path: "{{ src_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create workspace symlink to src
+  ansible.builtin.file:
+    src: "{{ ansible_facts['env']['HOME'] }}/src"
+    dest: "{{ ansible_facts['env']['HOME'] }}/workspace"
+    state: link
+
+- name: Clone git repositories
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "{{ item.dest }}"
+    accept_hostkey: true
+    update: false
+  loop: "{{ git_repos }}"
+  register: git_clone_results
+
+- name: Run post-clone commands
+  ansible.builtin.command:
+    cmd: "{{ item.item.post_clone }}"
+    chdir: "{{ item.item.dest }}"
+  loop: "{{ git_clone_results.results }}"
+  when: item.changed and item.item.post_clone is defined
+  loop_control:
+    label: "{{ item.item.name }}"
+  changed_when: true

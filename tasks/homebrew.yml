@@ -1,0 +1,39 @@
+---
+# Install Homebrew if not present
+- name: Check if Homebrew is installed
+  ansible.builtin.stat:
+    path: /opt/homebrew/bin/brew
+  register: homebrew_installed
+
+- name: Install Homebrew
+  ansible.builtin.shell:
+    cmd: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  environment:
+    NONINTERACTIVE: "1"
+  when: not homebrew_installed.stat.exists
+  changed_when: true
+
+# Install packages via Homebrew
+- name: Add Homebrew taps
+  community.general.homebrew_tap:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ homebrew_taps }}"
+  when: homebrew_taps | length > 0
+
+- name: Install Homebrew packages
+  community.general.homebrew:
+    name: "{{ homebrew_packages }}"
+    state: present
+
+- name: Install Homebrew casks
+  community.general.homebrew_cask:
+    name: "{{ item }}"
+    state: present
+    accept_external_apps: true
+  loop: "{{ homebrew_casks }}"
+
+- name: Remind about casks requiring manual sudo installation
+  ansible.builtin.debug:
+    msg: "Run manually: brew install --cask {{ item }}"
+  loop: "{{ homebrew_casks_sudo }}"

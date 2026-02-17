@@ -1,0 +1,101 @@
+" .ideavimrc is a configuration file for IdeaVim plugin. It uses
+"   the same commands as the original .vimrc configuration.
+" You can find a list of commands here: https://jb.gg/h38q75
+" Find more examples here: https://jb.gg/share-ideavimrc
+
+
+"" -- Suggested options --
+" Show a few lines of context around the cursor. Note that this makes the
+" text scroll if you mouse-click near the start or end of the window.
+set scrolloff=5
+
+" Do incremental searching.
+set incsearch
+
+set rnu
+let mapleader=" "
+noremap <leader>y "+y
+noremap <leader>p "+p
+
+" Don't use Ex mode, use Q for formatting.
+map Q gq
+
+" --- Enable IdeaVim plugins https://jb.gg/ideavim-plugins
+
+" Highlight copied text
+Plug 'machakann/vim-highlightedyank'
+" Commentary plugin
+Plug 'tpope/vim-commentary'
+
+
+"" -- Map IDE actions to IdeaVim -- https://jb.gg/abva4t
+"" Map \r to the Reformat Code action
+"map \r <Action>(ReformatCode)
+
+"" Map <leader>d to start debug
+"map <leader>d <Action>(Debug)
+
+"" Map \b to toggle the breakpoint on the current line
+"map \b <Action>(ToggleLineBreakpoint)
+
+set showmode
+set showcmd
+
+set scrolloff=10
+set ignorecase
+set smartcase
+set incsearch
+set hlsearch
+set notimeout
+set ideajoin
+set ideaput
+set ideamarks
+set which-key
+
+nnoremap <Left>  :echo "Use h to move!"<CR>
+nnoremap <Down>  :echo "Use j to move!"<CR>
+nnoremap <Up>    :echo "Use k to move!"<CR>
+nnoremap <Right> :echo "Use l to move!"<CR>
+
+"Paging up and down
+nnoremap <C-d> <C-d>zz
+nnoremap <C-u> <C-u>zz
+
+nnoremap <leader>fip :action FindInPath<CR>
+nnoremap <leader>fs  :action FileStructurePopup<CR>
+nnoremap <leader>fu  :action FindUsages<CR>
+
+nnoremap <leader>n  :action NextOccurence<CR>
+nnoremap <leader>p  :action PreviousOccurence<CR>
+
+nnoremap <leader>gf :action GotoFile<CR>
+nnoremap <leader>gr :action RecentFiles<CR>
+nnoremap <leader>gd  :action GotoDeclaration<CR>
+nnoremap <leader>fr :action RecentFiles<CR>
+nnoremap <leader>gi  :action GotoImplementation<CR>
+nnoremap <leader>gt  :action GotoTest<CR>
+nnoremap <leader>gy  :action GotoTypeDeclaration<CR>
+nnoremap <leader>gl  :action RecentLocations<CR>
+nnoremap <leader>g1  :action SelectIn<CR>
+nnoremap <leader>gn  :action VcsShowNextChangeMarker<CR>
+nnoremap <leader>gp  :action  VcsShowPrevChangeMarker<CR>
+"nnoremap <leader><Tab> <C-^>
+nnoremap <leader><Tab> :action Switcher<CR>:action SwitcherIterateItems<CR>:action PopupMenu-return<CR>
+nnoremap <leader>e :action RecentFiles<CR>
+
+nnoremap <leader>sa  :action ShowIntentionActions<CR>
+nnoremap <leader>sh  :action ShowHoverInfo<CR>
+nnoremap <leader>si  :action QuickImplementations<CR>
+nnoremap <leader>st  :action QuickTypeDefinition<CR>
+nnoremap <leader>su  :action ShowUsages<CR>
+
+nnoremap <leader>rf  :action ReformatCode<CR>
+nnoremap <leader>rr  :action RenameElement<CR>
+nnoremap <leader>rs  :action ChangeSignature<CR>
+
+nnoremap <leader>xc  :action RunClass<CR>
+nnoremap <leader>xx  :action Run<CR>
+
+let g:WhichKey_DefaultDelay = 0
+let g:WhichKey_FontSize = 16
+let g:WhichKey_SortCaseSensitive = "false"

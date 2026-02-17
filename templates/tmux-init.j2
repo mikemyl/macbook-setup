@@ -1,0 +1,6 @@
+#!/usr/bin/env zsh
+
+# Run project-specific tmux initialization if available
+if [[ -x ./.tmux-init-hook.sh ]]; then
+    ./.tmux-init-hook.sh
+fi

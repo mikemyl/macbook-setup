@@ -1,0 +1,80 @@
+---
+# Oh My Zsh installation
+- name: Check if Oh My Zsh is installed
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['env']['HOME'] }}/.oh-my-zsh"
+  register: omz_installed
+
+- name: Download Oh My Zsh install script
+  ansible.builtin.get_url:
+    url: "{{ omz_install_url }}"
+    dest: /tmp/install_omz.sh
+    mode: '0755'
+  when: not omz_installed.stat.exists
+
+- name: Install Oh My Zsh
+  ansible.builtin.command:
+    cmd: /tmp/install_omz.sh --unattended
+  when: not omz_installed.stat.exists
+  changed_when: true
+
+# Oh My Zsh plugins
+- name: Install Oh My Zsh plugins
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "{{ ansible_facts['env']['HOME'] }}/.oh-my-zsh/custom/plugins/{{ item.name }}"
+  loop: "{{ omz_plugins }}"
+
+# Dotfiles from template
+- name: Deploy .zshrc from template
+  ansible.builtin.template:
+    src: templates/zshrc.j2
+    dest: "{{ ansible_facts['env']['HOME'] }}/.zshrc"
+    mode: '0644'
+    backup: true
+
+# tmux configuration
+- name: Create tmux config directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/.config/tmux"
+    state: directory
+    mode: '0755'
+
+- name: Deploy tmux.conf from template
+  ansible.builtin.template:
+    src: templates/tmux.conf.j2
+    dest: "{{ ansible_facts['env']['HOME'] }}/.config/tmux/tmux.conf"
+    mode: '0644'
+    backup: true
+
+# tmux-init script
+- name: Create ~/.local/bin directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/.local/bin"
+    state: directory
+    mode: '0755'
+
+- name: Deploy tmux-init script
+  ansible.builtin.template:
+    src: templates/tmux-init.j2
+    dest: "{{ ansible_facts['env']['HOME'] }}/.local/bin/tmux-init"
+    mode: '0755'
+
+- name: Check if iTerm2 Shift+Enter key mapping exists
+  ansible.builtin.shell:
+    cmd: /usr/libexec/PlistBuddy -c "Print ':New Bookmarks:0:Keyboard Map:0xd-0x20000:Action'" ~/Library/Preferences/com.googlecode.iterm2.plist 2>/dev/null
+    executable: /bin/bash
+  register: iterm2_shift_enter
+  changed_when: false
+  failed_when: false
+
+- name: Configure iTerm2 Shift+Enter to send ESC+Enter (for tmux)
+  ansible.builtin.shell: |
+    /usr/libexec/PlistBuddy -c "Delete ':New Bookmarks:0:Keyboard Map:0xd-0x20000'" ~/Library/Preferences/com.googlecode.iterm2.plist 2>/dev/null || true
+    /usr/libexec/PlistBuddy -c "Add ':New Bookmarks:0:Keyboard Map:0xd-0x20000' dict" ~/Library/Preferences/com.googlecode.iterm2.plist
+    /usr/libexec/PlistBuddy -c "Add ':New Bookmarks:0:Keyboard Map:0xd-0x20000:Action' integer 10" ~/Library/Preferences/com.googlecode.iterm2.plist
+    /usr/libexec/PlistBuddy -c "Add ':New Bookmarks:0:Keyboard Map:0xd-0x20000:Text' string '\e\r'" ~/Library/Preferences/com.googlecode.iterm2.plist
+  args:
+    executable: /bin/bash
+  when: iterm2_shift_enter.rc != 0
+  changed_when: true

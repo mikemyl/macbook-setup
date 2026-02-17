@@ -1,0 +1,40 @@
+---
+# Font installation
+
+- name: Check if Monaco Nerd Font is installed
+  ansible.builtin.find:
+    paths: "{{ ansible_facts['env']['HOME'] }}/Library/Fonts"
+    patterns: "MonacoNerdFont*.ttf"
+  register: monaco_nerd_font_installed
+
+- name: Create temp directory for font extraction
+  ansible.builtin.file:
+    path: /tmp/monaco-nerd-font
+    state: directory
+  when: monaco_nerd_font_installed.files | length == 0
+
+- name: Download Monaco Nerd Font
+  ansible.builtin.unarchive:
+    src: "{{ monaco_nerd_font_url }}"
+    dest: /tmp/monaco-nerd-font
+    remote_src: true
+  when: monaco_nerd_font_installed.files | length == 0
+
+- name: Find extracted font files
+  ansible.builtin.find:
+    paths: /tmp/monaco-nerd-font
+    patterns: "*.ttf"
+    recurse: true
+  register: extracted_fonts
+  when: monaco_nerd_font_installed.files | length == 0
+
+- name: Install Monaco Nerd Font files
+  ansible.builtin.copy:
+    src: "{{ item.path }}"
+    dest: "{{ ansible_facts['env']['HOME'] }}/Library/Fonts/"
+    mode: '0644'
+    remote_src: true
+  loop: "{{ extracted_fonts.files }}"
+  when: monaco_nerd_font_installed.files | length == 0 and extracted_fonts.files | length > 0
+  loop_control:
+    label: "{{ item.path | basename }}"

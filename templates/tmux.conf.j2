@@ -1,0 +1,35 @@
+set -g default-terminal "tmux-256color"
+set -s escape-time 0
+set -g base-index 1
+
+# C-a prefix instead of C-b
+unbind C-b
+set-option -g prefix C-a
+bind-key C-a send-prefix
+
+# vi key movement for copy/paste mode
+set-window-option -g mode-keys vi
+bind -T copy-mode-vi v send-keys -X begin-selection
+bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'pbcopy'
+
+# Reload config
+bind r source-file ~/.config/tmux/tmux.conf \; display-message "tmux.conf reloaded"
+
+# Vim-style pane navigation
+bind -r h select-pane -L
+bind -r j select-pane -D
+bind -r k select-pane -U
+bind -r l select-pane -R
+
+# Run project-specific init script on session creation
+set-hook -g session-created 'run-shell "~/.local/bin/tmux-init"'
+
+# Fuzzy switch session
+bind S display-popup -E "tmux list-sessions -F '#{session_name}' | fzf --reverse | xargs tmux switch-client -t"
+
+# Fuzzy switch window (across all sessions)
+bind W display-popup -E "tmux list-windows -a -F '#{session_name}:#{window_index} #{window_name}' | fzf --reverse | cut -d' ' -f1 | xargs tmux switch-client -t"
+
+bind V choose-window "join-pane -h -s '%%'"
+# Pull a window into a pane (horizontal split)
+bind H choose-window "join-pane -v -s '%%'"

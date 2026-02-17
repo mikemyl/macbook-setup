@@ -1,0 +1,20 @@
+---
+# Neovim configuration
+
+- name: Create nvim config directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/.config/nvim"
+    state: directory
+    mode: '0755'
+
+- name: Deploy nvim init.lua
+  ansible.builtin.copy:
+    src: templates/nvim/init.lua
+    dest: "{{ ansible_facts['env']['HOME'] }}/.config/nvim/init.lua"
+    mode: '0644'
+
+- name: Deploy .ideavimrc
+  ansible.builtin.copy:
+    src: templates/ideavimrc
+    dest: "{{ ansible_facts['env']['HOME'] }}/.ideavimrc"
+    mode: '0644'

@@ -1,0 +1,40 @@
+---
+- name: Setup development environment
+  hosts: all
+  gather_facts: true
+
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Display target system info
+      ansible.builtin.debug:
+        msg: "Setting up {{ ansible_facts['system'] }} ({{ ansible_facts['distribution'] | default('Unknown') }})"
+
+    - name: Include shell setup tasks
+      ansible.builtin.import_tasks: tasks/shell.yml
+      tags: [shell]
+
+    - name: Include Homebrew tasks
+      ansible.builtin.import_tasks: tasks/homebrew.yml
+      tags: [homebrew]
+
+    - name: Include environment setup tasks
+      ansible.builtin.import_tasks: tasks/environment.yml
+      tags: [environment, env]
+
+    - name: Include font installation tasks
+      ansible.builtin.import_tasks: tasks/fonts.yml
+      tags: [fonts]
+
+    - name: Include Neovim configuration tasks
+      ansible.builtin.import_tasks: tasks/nvim-config.yml
+      tags: [nvim, neovim]
+
+    - name: Include Karabiner-Elements configuration tasks
+      ansible.builtin.import_tasks: tasks/karabiner.yml
+      tags: [karabiner]
+
+    - name: Include development setup tasks
+      ansible.builtin.import_tasks: tasks/development.yml
+      tags: [development]

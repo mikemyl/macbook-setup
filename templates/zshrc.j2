@@ -1,0 +1,35 @@
+# Homebrew
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Path to your oh-my-zsh installation.
+export ZSH="$HOME/.oh-my-zsh"
+export EDITOR="nvim"
+
+# Theme
+ZSH_THEME="candy"
+
+# Plugins
+plugins=(git fzf zsh-autosuggestions zsh-syntax-highlighting)
+
+bindkey '^ ' autosuggest-accept
+
+
+source $ZSH/oh-my-zsh.sh
+
+# Aliases
+alias ls='lsd'
+alias cat='bat -p -P'
+alias less='bat -p'
+alias vi='nvim'
+alias vim='nvim'
+
+# Source additional files
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# Environment
+{% for var, path in env_vars_macos.items() %}
+export {{ var }}="{{ path }}"
+{% endfor %}
+export PATH="{{ extra_path_dirs_macos | join(':') }}:$PATH"
+
+setopt -o sharehistory
