@@ -68,14 +68,15 @@ homebrew_packages:
   - zeromq
   - rbenv
   - ruby-build
+  - licecap
 
 homebrew_casks:
   - bitwarden
   - brave-browser
   - jetbrains-toolbox
-  - jumpcut
+  #- jumpcut
   - neovide
-  - ngrok
+  #- ngrok
 
 # Casks that require sudo for .pkg installation (installed separately)
 homebrew_casks_sudo:
@@ -95,3 +96,11 @@ extra_path_dirs_macos:
 
 # Git repositories to clone (requires SSH keys to be set up)
 git_repos: []
+
+# Machine-specific overrides (defined in vars/local.yml, which is gitignored)
+# Extra environment variables (e.g. NODE_EXTRA_CA_CERTS for Cloudflare Warp)
+extra_env_vars: {}
+# Extra raw shell config appended to .zshrc (e.g. work-specific aliases, functions)
+extra_shell_config: ""
+# Extra PATH directories
+extra_path_dirs: []

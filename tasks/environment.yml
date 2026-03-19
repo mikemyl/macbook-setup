@@ -35,6 +35,9 @@
       {% for var, path in env_vars_macos.items() %}
       launchctl setenv {{ var }} "{{ path }}"
       {% endfor %}
-      launchctl setenv PATH {{ extra_path_dirs_macos | join(':') }}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      {% for var, value in extra_env_vars.items() %}
+      launchctl setenv {{ var }} "{{ value }}"
+      {% endfor %}
+      launchctl setenv PATH {{ (extra_path_dirs + extra_path_dirs_macos) | join(':') }}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
   when: launchagent_installed.changed
   changed_when: true

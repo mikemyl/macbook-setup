@@ -30,6 +30,14 @@ alias vim='nvim'
 {% for var, path in env_vars_macos.items() %}
 export {{ var }}="{{ path }}"
 {% endfor %}
-export PATH="{{ extra_path_dirs_macos | join(':') }}:$PATH"
+{% for var, value in extra_env_vars.items() %}
+export {{ var }}="{{ value }}"
+{% endfor %}
+export PATH="{{ (extra_path_dirs + extra_path_dirs_macos) | join(':') }}:$PATH"
+{% if extra_shell_config %}
+
+# Machine-specific config
+{{ extra_shell_config }}
+{% endif %}
 
 setopt -o sharehistory

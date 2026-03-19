@@ -6,6 +6,17 @@
   vars_files:
     - vars/main.yml
 
+  pre_tasks:
+    - name: Check for local overrides
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/vars/local.yml"
+      register: local_vars_file
+
+    - name: Load local overrides if present
+      ansible.builtin.include_vars:
+        file: vars/local.yml
+      when: local_vars_file.stat.exists
+
   tasks:
     - name: Display target system info
       ansible.builtin.debug:
