@@ -43,6 +43,7 @@
     src: "{{ claude_cache_dir }}/citypaul-dotfiles/claude/.claude/skills/{{ item }}/"
     dest: "{{ claude_dir }}/skills/{{ item }}/"
     mode: '0644'
+    directory_mode: '0755'
     remote_src: true
   loop: "{{ citypaul_skills }}"
 
@@ -69,6 +70,7 @@
     src: "{{ claude_cache_dir }}/vercel-plugin/skills/{{ item }}/"
     dest: "{{ claude_dir }}/skills/{{ item }}/"
     mode: '0644'
+    directory_mode: '0755'
     remote_src: true
   loop: "{{ vercel_skills }}"
 
@@ -79,6 +81,7 @@
     src: "claude/skills/{{ item }}/"
     dest: "{{ claude_dir }}/skills/{{ item }}/"
     mode: '0644'
+    directory_mode: '0755'
   loop:
     - gsd-atdd
     - accessibility
@@ -95,11 +98,24 @@
 
 # ── CLAUDE.md ────────────────────────────────────────────────────────────────
 
-- name: Deploy CLAUDE.md
+- name: Check for local CLAUDE.md override
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/files/claude/CLAUDE.local.md"
+  register: claude_local_md
+
+- name: Deploy CLAUDE.md (local override)
+  ansible.builtin.copy:
+    src: claude/CLAUDE.local.md
+    dest: "{{ claude_dir }}/CLAUDE.md"
+    mode: '0644'
+  when: claude_local_md.stat.exists
+
+- name: Deploy CLAUDE.md (default)
   ansible.builtin.copy:
     src: claude/CLAUDE.md
     dest: "{{ claude_dir }}/CLAUDE.md"
     mode: '0644'
+  when: not claude_local_md.stat.exists
 
 # ── Settings & plugin registration ───────────────────────────────────────────
 

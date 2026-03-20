@@ -100,6 +100,14 @@ extra_path_dirs_macos:
 # Git repositories to clone (requires SSH keys to be set up)
 git_repos: []
 
+# Go tools (installed via go install, requires Go from homebrew)
+go_tools:
+  - github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+  - github.com/securego/gosec/v2/cmd/gosec@latest
+  - golang.org/x/vuln/cmd/govulncheck@latest
+  - golang.org/x/tools/cmd/deadcode@latest
+  - github.com/go-gremlins/gremlins/cmd/gremlins@latest
+
 # Claude Code
 claude_dir: "{{ ansible_facts['env']['HOME'] }}/.claude"
 claude_cache_dir: "{{ ansible_facts['env']['HOME'] }}/.cache/macbook-setup"
@@ -153,6 +161,8 @@ claude_plugins:
   - playwright@claude-plugins-official
   - typescript-lsp@claude-plugins-official
   - superpowers@claude-plugins-official
+  - plugin-dev@claude-plugins-official
+  - skill-creator@claude-plugins-official
   - cloudflare@cloudflare
 
 # Machine-specific overrides (defined in vars/local.yml, which is gitignored)

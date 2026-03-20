@@ -22,6 +22,16 @@
   loop: "{{ git_repos }}"
   register: git_clone_results
 
+- name: Install Go tools
+  ansible.builtin.command:
+    cmd: "go install {{ item }}"
+  environment:
+    GOPATH: "{{ ansible_facts['env']['HOME'] }}/go"
+    PATH: "{{ ansible_facts['env']['PATH'] }}:/opt/homebrew/bin"
+  loop: "{{ go_tools }}"
+  register: go_tool_result
+  changed_when: go_tool_result.rc == 0
+
 - name: Run post-clone commands
   ansible.builtin.command:
     cmd: "{{ item.item.post_clone }}"
