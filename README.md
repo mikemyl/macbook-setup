@@ -74,6 +74,92 @@ Edit `vars/main.yml` to customize:
 - Environment variables
 - PATH additions
 
+## AI - Claude Code Setup
+
+Installs and configures [GSD (get-shit-done)](https://github.com/trek-e/get-shit-done) with custom ATDD enforcement. Run with `--tags claude`.
+
+### Why GSD?
+
+Claude Code out of the box is great for small/medium tasks but struggles with larger projects. The main problems:
+
+- **Context window exhaustion** — Claude loses track of what it's doing on long tasks. GSD spawns sub-agents with fresh context windows and keeps the orchestrator lean (~10-15% usage).
+- **No persistent state** — if Claude crashes or you `/clear`, everything is lost. GSD persists all state to `.planning/` as markdown files (STATE.md, ROADMAP.md, PLAN.md, etc.), so work survives session resets.
+- **No structured decomposition** — Claude tends to dive straight into implementation. GSD forces Discuss -> Plan -> Execute -> Verify phases with dependency-ordered waves and review checkpoints.
+- **Verification gaps** — Claude says "done" when it isn't. GSD runs goal-backward verification: artifacts must exist, be substantive (not stubs), and be wired (actually connected).
+- **Token waste** — every `ls`, `cat`, `find` burns context. GSD offloads mechanical work to a Node.js CLI that returns single JSON blobs instead of 5-10 tool calls per step.
+
+### Workflow
+
+Each project phase follows: **Discuss** -> **Plan** -> **Execute** -> **Verify**.
+
+| Command | What it does |
+|---------|-------------|
+| `/gsd:new-project` | Interactive setup — creates PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md |
+| `/gsd:discuss-phase N` | Clarify gray areas, lock decisions for phase N |
+| `/gsd:plan-phase N` | Research + create wave-grouped PLAN.md files |
+| `/gsd:execute-phase N` | Spawn executor agents per plan, parallel within waves |
+| `/gsd:verify-work N` | Goal-backward verification + UAT |
+| `/gsd:progress` | Status dashboard, routes to next step |
+| `/gsd:quick "desc"` | Small tasks outside the phase workflow |
+| `/gsd:fast "desc"` | Trivial inline fixes |
+
+### Custom ATDD Enforcement (on top of GSD)
+
+GSD's testing is optional by default. We add mandatory Acceptance Test Driven Development via:
+
+- **Skill** (`~/.claude/skills/gsd-atdd/SKILL.md`) — tells GSD agents to require acceptance scenarios in plans, create failing tests in Wave 0 before implementation, and run mutation testing before phase completion.
+- **Hook** (`~/.claude/hooks/atdd-gate.js`) — PreToolUse hook that **hard blocks** (exit 2) SUMMARY.md writes unless a `.tests-passed` marker exists. On the last plan in a phase, also blocks without `.mutation-passed` marker if mutation testing is enabled.
+
+Enable per project in `.planning/config.json`:
+
+```json
+{
+  "atdd": {
+    "enabled": true,
+    "test_command": "npm test",
+    "mutation": {
+      "enabled": true,
+      "command": "npx stryker run --mutate",
+      "threshold": 80,
+      "on_phase_complete": true
+    }
+  }
+}
+```
+
+### What Gets Installed
+
+**GSD framework** (`npm install -g get-shit-done-cc`):
+- GSD hooks: statusline, context monitor, update checker, workflow guard
+
+**Custom ATDD enforcement** (bundled in this repo):
+- `~/.claude/hooks/atdd-gate.js` — hard-blocks SUMMARY.md without passing tests
+- `~/.claude/skills/gsd-atdd/` — ATDD protocol for GSD agents
+- `~/.claude/skills/accessibility/`, `best-practices/`, `performance/` — bundled skills (no upstream)
+
+**Skills from [citypaul/.dotfiles](https://github.com/citypaul/.dotfiles)** (fetched at install):
+- tdd, testing, mutation-testing, test-design-reviewer
+- functional, typescript-strict, refactoring, planning, expectations
+- front-end-testing, react-testing
+- domain-driven-design, hexagonal-architecture
+- ci-debugging
+
+**Skills from [vercel/vercel-plugin](https://github.com/vercel/vercel-plugin)** (fetched at install):
+- shadcn, react-best-practices, agent-browser
+
+**Agents from [citypaul/.dotfiles](https://github.com/citypaul/.dotfiles)** (fetched at install):
+- adr, docs-guardian, learn, pr-reviewer, progress-guardian
+- refactor-scan, tdd-guardian, ts-enforcer, use-case-data-patterns
+
+**Plugins** (enabled in settings.json, auto-installed by Claude Code):
+- superpowers (workflow skills: brainstorming, debugging, verification, git worktrees, etc.)
+- [cloudflare/skills](https://github.com/cloudflare/skills) (Workers, KV, D1, R2, Durable Objects, Agents SDK, etc.)
+- frontend-design, code-simplifier, claude-md-management
+- playwright (browser automation)
+- LSPs: typescript-lsp, gopls-lsp, jdtls-lsp (requires `typescript-language-server`, `gopls`, `jdtls` binaries — installed via Homebrew)
+
+**Re-running** `--tags claude` updates all fetched skills from their upstream repos. Plugins auto-update.
+
 ## Manual Configuration Notes
 
 ### iTerm2: Shift+Enter for newlines in tmux

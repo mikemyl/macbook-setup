@@ -49,3 +49,7 @@
     - name: Include development setup tasks
       ansible.builtin.import_tasks: tasks/development.yml
       tags: [development]
+
+    - name: Include Claude Code setup tasks
+      ansible.builtin.import_tasks: tasks/claude.yml
+      tags: [claude, ai]

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "medium",
+  "teammateMode": "tmux",
+  "enabledPlugins": {
+{% for plugin in claude_plugins %}
+    "{{ plugin }}": true{{ "," if not loop.last else "" }}
+{% endfor %}
+  },
+{% if claude_extra_marketplaces %}
+  "extraKnownMarketplaces": {
+{% for name, url in claude_extra_marketplaces.items() %}
+    "{{ name }}": {
+      "source": {
+        "source": "git",
+        "url": "{{ url }}"
+      }
+    }{{ "," if not loop.last else "" }}
+{% endfor %}
+  },
+{% endif %}
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/atdd-gate.js"
+          }
+        ]
+      }
+    ]
+  }
+}

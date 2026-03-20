@@ -1,0 +1,190 @@
+---
+# Claude Code setup: GSD framework, skills from citypaul/.dotfiles, custom ATDD enforcement
+
+- name: Create Claude config directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ claude_dir }}"
+    - "{{ claude_dir }}/hooks"
+    - "{{ claude_dir }}/skills"
+    - "{{ claude_dir }}/agents"
+
+# ── GSD Framework ────────────────────────────────────────────────────────────
+
+- name: Install GSD (get-shit-done) framework
+  community.general.npm:
+    name: get-shit-done-cc
+    global: true
+    state: present
+
+- name: Run GSD installer
+  ansible.builtin.command:
+    cmd: npx get-shit-done-cc install --global --non-interactive --force-statusline
+  environment:
+    HOME: "{{ ansible_facts['env']['HOME'] }}"
+  register: gsd_install
+  changed_when: "'installed' in gsd_install.stdout or 'Updated' in gsd_install.stdout"
+
+# ── Skills from citypaul/.dotfiles ───────────────────────────────────────────
+
+- name: Clone citypaul/.dotfiles for skills and agents
+  ansible.builtin.git:
+    repo: https://github.com/citypaul/.dotfiles.git
+    dest: "{{ claude_cache_dir }}/citypaul-dotfiles"
+    version: main
+    depth: 1
+    force: true
+
+- name: Copy skills from citypaul/.dotfiles
+  ansible.builtin.copy:
+    src: "{{ claude_cache_dir }}/citypaul-dotfiles/claude/.claude/skills/{{ item }}/"
+    dest: "{{ claude_dir }}/skills/{{ item }}/"
+    mode: '0644'
+    remote_src: true
+  loop: "{{ citypaul_skills }}"
+
+- name: Copy agents from citypaul/.dotfiles
+  ansible.builtin.copy:
+    src: "{{ claude_cache_dir }}/citypaul-dotfiles/claude/.claude/agents/{{ item }}"
+    dest: "{{ claude_dir }}/agents/{{ item }}"
+    mode: '0644'
+    remote_src: true
+  loop: "{{ citypaul_agents }}"
+
+# ── Skills from vercel/vercel-plugin ──────────────────────────────────────────
+
+- name: Clone vercel/vercel-plugin for skills
+  ansible.builtin.git:
+    repo: https://github.com/vercel/vercel-plugin.git
+    dest: "{{ claude_cache_dir }}/vercel-plugin"
+    version: main
+    depth: 1
+    force: true
+
+- name: Copy skills from vercel/vercel-plugin
+  ansible.builtin.copy:
+    src: "{{ claude_cache_dir }}/vercel-plugin/skills/{{ item }}/"
+    dest: "{{ claude_dir }}/skills/{{ item }}/"
+    mode: '0644'
+    remote_src: true
+  loop: "{{ vercel_skills }}"
+
+# ── Bundled skills (no upstream source) ──────────────────────────────────────
+
+- name: Copy bundled skills
+  ansible.builtin.copy:
+    src: "claude/skills/{{ item }}/"
+    dest: "{{ claude_dir }}/skills/{{ item }}/"
+    mode: '0644'
+  loop:
+    - gsd-atdd
+    - accessibility
+    - best-practices
+    - performance
+
+# ── Custom hooks ─────────────────────────────────────────────────────────────
+
+- name: Copy ATDD gate hook
+  ansible.builtin.copy:
+    src: claude/hooks/atdd-gate.js
+    dest: "{{ claude_dir }}/hooks/atdd-gate.js"
+    mode: '0644'
+
+# ── CLAUDE.md ────────────────────────────────────────────────────────────────
+
+- name: Deploy CLAUDE.md
+  ansible.builtin.copy:
+    src: claude/CLAUDE.md
+    dest: "{{ claude_dir }}/CLAUDE.md"
+    mode: '0644'
+
+# ── Settings & plugin registration ───────────────────────────────────────────
+
+- name: Deploy Claude settings.json if none exists
+  ansible.builtin.template:
+    src: claude-settings.json.j2
+    dest: "{{ claude_dir }}/settings.json"
+    mode: '0644'
+    force: false
+
+- name: Ensure ATDD hook is registered in settings.json
+  ansible.builtin.command:
+    cmd: >
+      node -e "
+        const fs = require('fs');
+        const p = '{{ claude_dir }}/settings.json';
+        const s = JSON.parse(fs.readFileSync(p, 'utf8'));
+        if (!s.hooks) s.hooks = {};
+        if (!s.hooks.PreToolUse) s.hooks.PreToolUse = [];
+        const hasHook = s.hooks.PreToolUse.some(e =>
+          e.hooks && e.hooks.some(h => h.command && h.command.includes('atdd-gate'))
+        );
+        if (!hasHook) {
+          s.hooks.PreToolUse.push({
+            matcher: 'Write|Edit',
+            hooks: [{ type: 'command', command: 'node ~/.claude/hooks/atdd-gate.js' }]
+          });
+          fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
+          console.log('added');
+        } else {
+          console.log('exists');
+        }
+      "
+  register: hook_registration
+  changed_when: "'added' in hook_registration.stdout"
+
+- name: Ensure cache directory exists
+  ansible.builtin.file:
+    path: "{{ claude_cache_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Write marketplace and plugin data for settings merge
+  ansible.builtin.copy:
+    content: "{{ {'marketplaces': claude_extra_marketplaces, 'plugins': claude_plugins} | to_json }}"
+    dest: "{{ claude_cache_dir }}/settings-merge.json"
+    mode: '0644'
+
+- name: Merge marketplaces and plugins into settings.json
+  ansible.builtin.command:
+    cmd: >
+      node -e "
+        const fs = require('fs');
+        const sp = '{{ claude_dir }}/settings.json';
+        const mp = '{{ claude_cache_dir }}/settings-merge.json';
+        const s = JSON.parse(fs.readFileSync(sp, 'utf8'));
+        const m = JSON.parse(fs.readFileSync(mp, 'utf8'));
+        let changed = false;
+        if (!s.extraKnownMarketplaces) s.extraKnownMarketplaces = {};
+        for (const [name, url] of Object.entries(m.marketplaces)) {
+          if (!s.extraKnownMarketplaces[name]) {
+            s.extraKnownMarketplaces[name] = { source: { source: 'git', url } };
+            changed = true;
+          }
+        }
+        if (!s.enabledPlugins) s.enabledPlugins = {};
+        for (const plugin of m.plugins) {
+          if (s.enabledPlugins[plugin] !== true) {
+            s.enabledPlugins[plugin] = true;
+            changed = true;
+          }
+        }
+        if (changed) {
+          fs.writeFileSync(sp, JSON.stringify(s, null, 2) + '\n');
+          console.log('added');
+        } else {
+          console.log('exists');
+        }
+      "
+  register: settings_merge
+  changed_when: "'added' in settings_merge.stdout"
+
+# ── Cleanup ──────────────────────────────────────────────────────────────────
+
+- name: Remove cached repos
+  ansible.builtin.file:
+    path: "{{ claude_cache_dir }}"
+    state: absent

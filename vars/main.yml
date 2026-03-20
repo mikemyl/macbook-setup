@@ -20,6 +20,9 @@ homebrew_taps:
 homebrew_packages:
   - ansible
   - bat
+  - gopls
+  - jdtls
+  - typescript-language-server
   - caddy
   - chipmk/tap/docker-mac-net-connect
   - chruby
@@ -68,13 +71,13 @@ homebrew_packages:
   - zeromq
   - rbenv
   - ruby-build
-  - licecap
 
 homebrew_casks:
   - bitwarden
   - brave-browser
   - jetbrains-toolbox
   #- jumpcut
+  - licecap
   - neovide
   #- ngrok
 
@@ -96,6 +99,61 @@ extra_path_dirs_macos:
 
 # Git repositories to clone (requires SSH keys to be set up)
 git_repos: []
+
+# Claude Code
+claude_dir: "{{ ansible_facts['env']['HOME'] }}/.claude"
+claude_cache_dir: "{{ ansible_facts['env']['HOME'] }}/.cache/macbook-setup"
+
+# Skills fetched from https://github.com/citypaul/.dotfiles (claude/.claude/skills/)
+citypaul_skills:
+  - ci-debugging
+  - domain-driven-design
+  - expectations
+  - front-end-testing
+  - functional
+  - hexagonal-architecture
+  - mutation-testing
+  - planning
+  - react-testing
+  - refactoring
+  - tdd
+  - test-design-reviewer
+  - testing
+  - typescript-strict
+
+# Agents fetched from https://github.com/citypaul/.dotfiles (claude/.claude/agents/)
+citypaul_agents:
+  - adr.md
+  - docs-guardian.md
+  - learn.md
+  - pr-reviewer.md
+  - progress-guardian.md
+  - refactor-scan.md
+  - tdd-guardian.md
+  - ts-enforcer.md
+  - use-case-data-patterns.md
+
+# Skills fetched from https://github.com/vercel/vercel-plugin (skills/)
+vercel_skills:
+  - shadcn
+  - react-best-practices
+  - agent-browser
+
+# Plugins enabled in settings.json (auto-installed by Claude Code)
+# Extra plugin marketplaces (git repos with .claude-plugin marker)
+claude_extra_marketplaces:
+  cloudflare: "https://github.com/cloudflare/skills.git"
+
+claude_plugins:
+  - frontend-design@claude-code-plugins
+  - gopls-lsp@claude-plugins-official
+  - jdtls-lsp@claude-plugins-official
+  - code-simplifier@claude-plugins-official
+  - claude-md-management@claude-plugins-official
+  - playwright@claude-plugins-official
+  - typescript-lsp@claude-plugins-official
+  - superpowers@claude-plugins-official
+  - cloudflare@cloudflare
 
 # Machine-specific overrides (defined in vars/local.yml, which is gitignored)
 # Extra environment variables (e.g. NODE_EXTRA_CA_CERTS for Cloudflare Warp)
