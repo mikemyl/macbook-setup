@@ -105,7 +105,7 @@ git_repos: []
 
 # Go tools (installed via go install, requires Go from homebrew)
 go_tools:
-  - github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+  - github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
   - github.com/securego/gosec/v2/cmd/gosec@latest
   - golang.org/x/vuln/cmd/govulncheck@latest
   - golang.org/x/tools/cmd/deadcode@latest
@@ -155,6 +155,7 @@ vercel_skills:
 # Extra plugin marketplaces (git repos with .claude-plugin marker)
 claude_extra_marketplaces:
   cloudflare: "https://github.com/cloudflare/skills.git"
+  verified-development: "https://github.com/mikemyl/verified-development.git"
 
 claude_plugins:
   - frontend-design@claude-code-plugins
@@ -168,6 +169,7 @@ claude_plugins:
   - plugin-dev@claude-plugins-official
   - skill-creator@claude-plugins-official
   - cloudflare@cloudflare
+  - verified-development@verified-development
 
 # Machine-specific overrides (defined in vars/local.yml, which is gitignored)
 # Extra environment variables (e.g. NODE_EXTRA_CA_CERTS for Cloudflare Warp)

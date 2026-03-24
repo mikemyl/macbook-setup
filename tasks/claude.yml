@@ -1,5 +1,5 @@
 ---
-# Claude Code setup: GSD framework, skills from citypaul/.dotfiles, custom ATDD enforcement
+# Claude Code setup: verified-development plugin, community skills, CLAUDE.md
 
 - name: Create Claude config directories
   ansible.builtin.file:
@@ -8,25 +8,8 @@
     mode: '0755'
   loop:
     - "{{ claude_dir }}"
-    - "{{ claude_dir }}/hooks"
     - "{{ claude_dir }}/skills"
     - "{{ claude_dir }}/agents"
-
-# ── GSD Framework ────────────────────────────────────────────────────────────
-
-- name: Install GSD (get-shit-done) framework
-  community.general.npm:
-    name: get-shit-done-cc
-    global: true
-    state: present
-
-- name: Run GSD installer
-  ansible.builtin.command:
-    cmd: npx get-shit-done-cc install --global --non-interactive --force-statusline
-  environment:
-    HOME: "{{ ansible_facts['env']['HOME'] }}"
-  register: gsd_install
-  changed_when: "'installed' in gsd_install.stdout or 'Updated' in gsd_install.stdout"
 
 # ── Skills from citypaul/.dotfiles ───────────────────────────────────────────
 
@@ -83,18 +66,9 @@
     mode: '0644'
     directory_mode: '0755'
   loop:
-    - gsd-atdd
     - accessibility
     - best-practices
     - performance
-
-# ── Custom hooks ─────────────────────────────────────────────────────────────
-
-- name: Copy ATDD gate hook
-  ansible.builtin.copy:
-    src: claude/hooks/atdd-gate.js
-    dest: "{{ claude_dir }}/hooks/atdd-gate.js"
-    mode: '0644'
 
 # ── CLAUDE.md ────────────────────────────────────────────────────────────────
 
@@ -125,32 +99,6 @@
     dest: "{{ claude_dir }}/settings.json"
     mode: '0644'
     force: false
-
-- name: Ensure ATDD hook is registered in settings.json
-  ansible.builtin.command:
-    cmd: >
-      node -e "
-        const fs = require('fs');
-        const p = '{{ claude_dir }}/settings.json';
-        const s = JSON.parse(fs.readFileSync(p, 'utf8'));
-        if (!s.hooks) s.hooks = {};
-        if (!s.hooks.PreToolUse) s.hooks.PreToolUse = [];
-        const hasHook = s.hooks.PreToolUse.some(e =>
-          e.hooks && e.hooks.some(h => h.command && h.command.includes('atdd-gate'))
-        );
-        if (!hasHook) {
-          s.hooks.PreToolUse.push({
-            matcher: 'Write|Edit',
-            hooks: [{ type: 'command', command: 'node ~/.claude/hooks/atdd-gate.js' }]
-          });
-          fs.writeFileSync(p, JSON.stringify(s, null, 2) + '\n');
-          console.log('added');
-        } else {
-          console.log('exists');
-        }
-      "
-  register: hook_registration
-  changed_when: "'added' in hook_registration.stdout"
 
 - name: Ensure cache directory exists
   ansible.builtin.file:

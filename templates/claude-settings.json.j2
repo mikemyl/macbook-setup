@@ -28,8 +28,7 @@
 {% for plugin in claude_plugins %}
     "{{ plugin }}": true{{ "," if not loop.last else "" }}
 {% endfor %}
-  },
-{% if claude_extra_marketplaces %}
+  }{% if claude_extra_marketplaces %},
   "extraKnownMarketplaces": {
 {% for name, url in claude_extra_marketplaces.items() %}
     "{{ name }}": {
@@ -39,19 +38,6 @@
       }
     }{{ "," if not loop.last else "" }}
 {% endfor %}
-  },
-{% endif %}
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node ~/.claude/hooks/atdd-gate.js"
-          }
-        ]
-      }
-    ]
   }
+{% endif %}
 }
