@@ -48,6 +48,11 @@
     depth: 1
     force: true
 
+- name: Ensure skill directories are traversable before copy
+  ansible.builtin.shell:
+    cmd: chmod -R u+rwX {{ claude_dir }}/skills 2>/dev/null || true
+  changed_when: false
+
 - name: Copy skills from vercel/vercel-plugin
   ansible.builtin.copy:
     src: "{{ claude_cache_dir }}/vercel-plugin/skills/{{ item }}/"
