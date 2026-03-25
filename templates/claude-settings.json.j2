@@ -38,6 +38,10 @@
       }
     }{{ "," if not loop.last else "" }}
 {% endfor %}
-  }
+  },
 {% endif %}
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/hooks/vd-statusline.js"
+  }
 }

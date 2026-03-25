@@ -151,6 +151,23 @@
   register: settings_merge
   changed_when: "'added' in settings_merge.stdout"
 
+# ── Statusline ────────────────────────────────────────────────────────────────
+
+- name: Create Claude hooks directory
+  ansible.builtin.file:
+    path: "{{ claude_dir }}/hooks"
+    state: directory
+    mode: '0755'
+
+- name: Copy verified-development statusline to stable path
+  ansible.builtin.shell:
+    cmd: >
+      find {{ claude_dir }}/plugins/cache/verified-development -name "statusline.js" -print -quit
+      | head -1
+      | xargs -I{} cp {} {{ claude_dir }}/hooks/vd-statusline.js
+  args:
+    creates: "{{ claude_dir }}/hooks/vd-statusline.js"
+
 # ── Cleanup ──────────────────────────────────────────────────────────────────
 
 - name: Remove cached repos
