@@ -1,5 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(date:*)",
@@ -23,12 +26,15 @@
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium",
+  "voiceEnabled": true,
+  "skipDangerousModePermissionPrompt": false,
   "teammateMode": "tmux",
   "enabledPlugins": {
 {% for plugin in claude_plugins %}
     "{{ plugin }}": true{{ "," if not loop.last else "" }}
 {% endfor %}
-  }{% if claude_extra_marketplaces %},
+  },
+{% if claude_extra_marketplaces %}
   "extraKnownMarketplaces": {
 {% for name, url in claude_extra_marketplaces.items() %}
     "{{ name }}": {

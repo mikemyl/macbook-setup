@@ -98,58 +98,11 @@
 
 # ── Settings & plugin registration ───────────────────────────────────────────
 
-- name: Deploy Claude settings.json if none exists
+- name: Deploy Claude settings.json
   ansible.builtin.template:
     src: claude-settings.json.j2
     dest: "{{ claude_dir }}/settings.json"
     mode: '0644'
-    force: false
-
-- name: Ensure cache directory exists
-  ansible.builtin.file:
-    path: "{{ claude_cache_dir }}"
-    state: directory
-    mode: '0755'
-
-- name: Write marketplace and plugin data for settings merge
-  ansible.builtin.copy:
-    content: "{{ {'marketplaces': claude_extra_marketplaces, 'plugins': claude_plugins} | to_json }}"
-    dest: "{{ claude_cache_dir }}/settings-merge.json"
-    mode: '0644'
-
-- name: Merge marketplaces and plugins into settings.json
-  ansible.builtin.command:
-    cmd: >
-      node -e "
-        const fs = require('fs');
-        const sp = '{{ claude_dir }}/settings.json';
-        const mp = '{{ claude_cache_dir }}/settings-merge.json';
-        const s = JSON.parse(fs.readFileSync(sp, 'utf8'));
-        const m = JSON.parse(fs.readFileSync(mp, 'utf8'));
-        let changed = false;
-        if (!s.extraKnownMarketplaces) s.extraKnownMarketplaces = {};
-        for (const [name, url] of Object.entries(m.marketplaces)) {
-          if (!s.extraKnownMarketplaces[name]) {
-            s.extraKnownMarketplaces[name] = { source: { source: 'git', url } };
-            changed = true;
-          }
-        }
-        if (!s.enabledPlugins) s.enabledPlugins = {};
-        for (const plugin of m.plugins) {
-          if (s.enabledPlugins[plugin] !== true) {
-            s.enabledPlugins[plugin] = true;
-            changed = true;
-          }
-        }
-        if (changed) {
-          fs.writeFileSync(sp, JSON.stringify(s, null, 2) + '\n');
-          console.log('added');
-        } else {
-          console.log('exists');
-        }
-      "
-  register: settings_merge
-  changed_when: "'added' in settings_merge.stdout"
 
 # ── Statusline ────────────────────────────────────────────────────────────────
 
