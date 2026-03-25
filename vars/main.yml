@@ -156,7 +156,6 @@ vercel_skills:
 claude_extra_marketplaces:
   cloudflare: "https://github.com/cloudflare/skills.git"
   verified-development: "https://github.com/mikemyl/verified-development.git"
-  superpowers: "https://github.com/obra/superpowers.git"
 
 claude_plugins:
   - frontend-design@claude-plugins-official
@@ -166,7 +165,7 @@ claude_plugins:
   - claude-md-management@claude-plugins-official
   - playwright@claude-plugins-official
   - typescript-lsp@claude-plugins-official
-  - superpowers@superpowers
+  - superpowers@claude-plugins-official
   - plugin-dev@claude-plugins-official
   - skill-creator@claude-plugins-official
   - cloudflare@cloudflare
