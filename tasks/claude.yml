@@ -21,6 +21,11 @@
     depth: 1
     force: true
 
+- name: Ensure skill directories are traversable before copy
+  ansible.builtin.shell:
+    cmd: chmod -R u+rwX {{ claude_dir }}/skills 2>/dev/null || true
+  changed_when: false
+
 - name: Copy skills from citypaul/.dotfiles
   ansible.builtin.copy:
     src: "{{ claude_cache_dir }}/citypaul-dotfiles/claude/.claude/skills/{{ item }}/"
@@ -37,30 +42,6 @@
     mode: '0644'
     remote_src: true
   loop: "{{ citypaul_agents }}"
-
-# ── Skills from vercel/vercel-plugin ──────────────────────────────────────────
-
-- name: Clone vercel/vercel-plugin for skills
-  ansible.builtin.git:
-    repo: https://github.com/vercel/vercel-plugin.git
-    dest: "{{ claude_cache_dir }}/vercel-plugin"
-    version: main
-    depth: 1
-    force: true
-
-- name: Ensure skill directories are traversable before copy
-  ansible.builtin.shell:
-    cmd: chmod -R u+rwX {{ claude_dir }}/skills 2>/dev/null || true
-  changed_when: false
-
-- name: Copy skills from vercel/vercel-plugin
-  ansible.builtin.copy:
-    src: "{{ claude_cache_dir }}/vercel-plugin/skills/{{ item }}/"
-    dest: "{{ claude_dir }}/skills/{{ item }}/"
-    mode: '0644'
-    directory_mode: '0755'
-    remote_src: true
-  loop: "{{ vercel_skills }}"
 
 # ── Bundled skills (no upstream source) ──────────────────────────────────────
 

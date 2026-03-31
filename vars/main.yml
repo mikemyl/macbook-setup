@@ -145,12 +145,6 @@ citypaul_agents:
   - ts-enforcer.md
   - use-case-data-patterns.md
 
-# Skills fetched from https://github.com/vercel/vercel-plugin (skills/)
-vercel_skills:
-  - shadcn
-  - react-best-practices
-  - agent-browser
-
 # Plugins enabled in settings.json (auto-installed by Claude Code)
 # Extra plugin marketplaces (git repos with .claude-plugin marker)
 claude_extra_marketplaces:
@@ -165,9 +159,9 @@ claude_plugins:
   - claude-md-management@claude-plugins-official
   - playwright@claude-plugins-official
   - typescript-lsp@claude-plugins-official
-  - superpowers@claude-plugins-official
   - plugin-dev@claude-plugins-official
   - skill-creator@claude-plugins-official
+  - vercel@claude-plugins-official
   - cloudflare@cloudflare
   - verified-development@verified-development
 
