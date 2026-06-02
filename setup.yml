@@ -7,20 +7,28 @@
     - vars/main.yml
 
   pre_tasks:
+    # tags: always — so local overrides load even on tag-filtered runs
+    # (e.g. --tags hostname / --tags power), otherwise vars/local.yml is skipped.
     - name: Check for local overrides
       ansible.builtin.stat:
         path: "{{ playbook_dir }}/vars/local.yml"
       register: local_vars_file
+      tags: always
 
     - name: Load local overrides if present
       ansible.builtin.include_vars:
         file: vars/local.yml
       when: local_vars_file.stat.exists
+      tags: always
 
   tasks:
     - name: Display target system info
       ansible.builtin.debug:
         msg: "Setting up {{ ansible_facts['system'] }} ({{ ansible_facts['distribution'] | default('Unknown') }})"
+
+    - name: Include hostname tasks
+      ansible.builtin.import_tasks: tasks/hostname.yml
+      tags: [hostname]
 
     - name: Include shell setup tasks
       ansible.builtin.import_tasks: tasks/shell.yml
@@ -53,3 +61,7 @@
     - name: Include Claude Code setup tasks
       ansible.builtin.import_tasks: tasks/claude.yml
       tags: [claude, ai]
+
+    - name: Include power management tasks
+      ansible.builtin.import_tasks: tasks/power.yml
+      tags: [power]

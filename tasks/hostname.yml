@@ -1,0 +1,72 @@
+---
+# Hostname — give this Mac a stable, DNS-friendly name so it is reachable as
+# <name>.local (Bonjour, on-link) and <name>.fritz.box (FRITZ!Box DNS, works on
+# the LAN and over WireGuard). Per-machine value: `mac_hostname` in vars/local.yml.
+#
+# macOS exposes three names via scutil:
+#   HostName       -> the real hostname; drives the DHCP name the router registers
+#   LocalHostName  -> the Bonjour/.local name
+#   ComputerName   -> friendly label in System Settings -> Sharing
+# We pin HostName + LocalHostName to one clean name. ComputerName is left alone
+# unless `mac_computer_name` is defined. scutil --set needs root.
+
+- name: Skip hostname config when mac_hostname is unset
+  ansible.builtin.debug:
+    msg: "mac_hostname is empty — skipping (set it in vars/local.yml to enable)"
+  when: mac_hostname | default('') | length == 0
+
+- name: Configure stable hostname
+  when: mac_hostname | default('') | length > 0
+  block:
+    - name: Read current HostName
+      ansible.builtin.command: scutil --get HostName
+      register: cur_hostname
+      changed_when: false
+      failed_when: false        # exits 1 with "HostName: not set" when unset
+      check_mode: false
+
+    - name: Read current LocalHostName
+      ansible.builtin.command: scutil --get LocalHostName
+      register: cur_localhostname
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Record whether the name needs changing
+      ansible.builtin.set_fact:
+        mac_name_changed: "{{ (cur_hostname.stdout | trim != mac_hostname) or
+                              (cur_localhostname.stdout | trim != mac_hostname) }}"
+
+    - name: Set HostName
+      ansible.builtin.command: "scutil --set HostName {{ mac_hostname }}"
+      become: true
+      when: cur_hostname.stdout | trim != mac_hostname
+      changed_when: true
+
+    - name: Set LocalHostName (Bonjour .local name)
+      ansible.builtin.command: "scutil --set LocalHostName {{ mac_hostname }}"
+      become: true
+      when: cur_localhostname.stdout | trim != mac_hostname
+      changed_when: true
+
+    - name: Read current ComputerName
+      ansible.builtin.command: scutil --get ComputerName
+      register: cur_computername
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: mac_computer_name is defined
+
+    - name: Set ComputerName (friendly Sharing label)
+      ansible.builtin.command: "scutil --set ComputerName {{ mac_computer_name }}"
+      become: true
+      when:
+        - mac_computer_name is defined
+        - cur_computername.stdout | trim != mac_computer_name
+      changed_when: true
+
+    - name: Flush mDNS so the new name is re-announced
+      ansible.builtin.command: killall -HUP mDNSResponder
+      become: true
+      when: mac_name_changed | bool
+      changed_when: false

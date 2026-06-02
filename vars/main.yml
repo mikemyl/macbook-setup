@@ -161,9 +161,29 @@ claude_plugins:
   - typescript-lsp@claude-plugins-official
   - plugin-dev@claude-plugins-official
   - skill-creator@claude-plugins-official
+  - stripe@claude-plugins-official
   - vercel@claude-plugins-official
   - cloudflare@cloudflare
   - verified-development@verified-development
+
+# Power management (pmset). AC never idle-sleeps so remote sessions (Claude Code,
+# VNC, SSH) survive hours of idle; battery still sleeps to preserve charge.
+# Lid-close sleep is left untouched (no disablesleep). See docs/power-management.md.
+power_management:
+  ac:
+    sleep: 0          # minutes of idle before system sleep (0 = never)
+    displaysleep: 10
+  battery:
+    sleep: 30
+    displaysleep: 5
+
+# Stable LAN hostname for this Mac. Empty = leave the system name untouched.
+# Set per-machine in vars/local.yml. Drives both the Bonjour <name>.local name
+# and the DHCP name the FRITZ!Box registers as <name>.fritz.box (resolvable on
+# the LAN and over WireGuard). See docs/lan-hostnames.md.
+mac_hostname: ""
+# Optional friendly name shown in System Settings → Sharing. Unset = leave as-is.
+# mac_computer_name: "Michail's MacBook Pro"
 
 # Machine-specific overrides (defined in vars/local.yml, which is gitignored)
 # Extra environment variables (e.g. NODE_EXTRA_CA_CERTS for Cloudflare Warp)

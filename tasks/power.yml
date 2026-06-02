@@ -1,0 +1,53 @@
+---
+# Power management — enforce pmset sleep policy.
+# Goal: on AC never idle-sleep (keep remote Claude Code / VNC / SSH sessions
+# alive); on battery still idle-sleep; lid-close sleep left untouched.
+#
+# pmset has no Ansible module and -c/-b/-a need root, so we use `command` with
+# `become: true`. Idempotency: parse `pmset -g custom` once into AC/Battery
+# blocks and gate each write on a real value mismatch. We deliberately never
+# touch `disablesleep` — that knob (and only that knob) governs lid-close sleep,
+# which must keep working.
+
+- name: Read current pmset profile
+  ansible.builtin.command: pmset -g custom
+  register: pmset_custom
+  changed_when: false
+  check_mode: false   # read-only; must run under --check so the guards below see real values
+
+- name: Extract AC and Battery power blocks
+  ansible.builtin.set_fact:
+    pmset_ac_block: "{{ pmset_custom.stdout | regex_search('(?s)AC Power:.*?(?=Battery Power:|$)') | default('', true) }}"
+    pmset_battery_block: "{{ pmset_custom.stdout | regex_search('(?s)Battery Power:.*?(?=AC Power:|$)') | default('', true) }}"
+
+- name: Set AC sleep timer (0 = never idle-sleep on AC)
+  ansible.builtin.command: "pmset -c sleep {{ power_management.ac.sleep }}"
+  become: true
+  when: pmset_ac_block is not search('(?m)^\s*sleep\s+' ~ power_management.ac.sleep ~ '\b')
+  changed_when: true
+
+- name: Set AC display sleep timer
+  ansible.builtin.command: "pmset -c displaysleep {{ power_management.ac.displaysleep }}"
+  become: true
+  when: pmset_ac_block is not search('(?m)^\s*displaysleep\s+' ~ power_management.ac.displaysleep ~ '\b')
+  changed_when: true
+
+- name: Set battery sleep timer
+  ansible.builtin.command: "pmset -b sleep {{ power_management.battery.sleep }}"
+  become: true
+  when: pmset_battery_block is not search('(?m)^\s*sleep\s+' ~ power_management.battery.sleep ~ '\b')
+  changed_when: true
+
+- name: Set battery display sleep timer
+  ansible.builtin.command: "pmset -b displaysleep {{ power_management.battery.displaysleep }}"
+  become: true
+  when: pmset_battery_block is not search('(?m)^\s*displaysleep\s+' ~ power_management.battery.displaysleep ~ '\b')
+  changed_when: true
+
+- name: Ensure system sleep is NOT globally disabled (lid-close must still sleep)
+  ansible.builtin.command: pmset -a disablesleep 0
+  become: true
+  when: >-
+    pmset_ac_block is search('(?m)^\s*disablesleep\s+1\b')
+    or pmset_battery_block is search('(?m)^\s*disablesleep\s+1\b')
+  changed_when: true
