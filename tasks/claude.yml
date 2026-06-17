@@ -1,5 +1,8 @@
 ---
-# Claude Code setup: verified-development plugin, community skills, CLAUDE.md
+# Claude Code setup: verified-development plugin, bundled skills, CLAUDE.md
+#
+# Skills/agents that used to be vendored from citypaul/.dotfiles are now carried
+# by the verified-development plugin (enabled via settings.json). See vars/main.yml.
 
 - name: Create Claude config directories
   ansible.builtin.file:
@@ -9,39 +12,6 @@
   loop:
     - "{{ claude_dir }}"
     - "{{ claude_dir }}/skills"
-    - "{{ claude_dir }}/agents"
-
-# ── Skills from citypaul/.dotfiles ───────────────────────────────────────────
-
-- name: Clone citypaul/.dotfiles for skills and agents
-  ansible.builtin.git:
-    repo: https://github.com/citypaul/.dotfiles.git
-    dest: "{{ claude_cache_dir }}/citypaul-dotfiles"
-    version: main
-    depth: 1
-    force: true
-
-- name: Ensure skill directories are traversable before copy
-  ansible.builtin.shell:
-    cmd: chmod -R u+rwX {{ claude_dir }}/skills 2>/dev/null || true
-  changed_when: false
-
-- name: Copy skills from citypaul/.dotfiles
-  ansible.builtin.copy:
-    src: "{{ claude_cache_dir }}/citypaul-dotfiles/claude/.claude/skills/{{ item }}/"
-    dest: "{{ claude_dir }}/skills/{{ item }}/"
-    mode: '0644'
-    directory_mode: '0755'
-    remote_src: true
-  loop: "{{ citypaul_skills }}"
-
-- name: Copy agents from citypaul/.dotfiles
-  ansible.builtin.copy:
-    src: "{{ claude_cache_dir }}/citypaul-dotfiles/claude/.claude/agents/{{ item }}"
-    dest: "{{ claude_dir }}/agents/{{ item }}"
-    mode: '0644'
-    remote_src: true
-  loop: "{{ citypaul_agents }}"
 
 # ── Bundled skills (no upstream source) ──────────────────────────────────────
 
@@ -101,10 +71,3 @@
       | xargs -I{} cp {} {{ claude_dir }}/hooks/vd-statusline.js
   args:
     creates: "{{ claude_dir }}/hooks/vd-statusline.js"
-
-# ── Cleanup ──────────────────────────────────────────────────────────────────
-
-- name: Remove cached repos
-  ansible.builtin.file:
-    path: "{{ claude_cache_dir }}"
-    state: absent
