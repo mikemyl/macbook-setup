@@ -21,11 +21,13 @@
       "Bash(git tag:*)"
     ]
   },
+  "env": {
+    "CLAUDE_CODE_NO_FLICKER": "1"
+  },
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium",
   "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": false,
-  "teammateMode": "tmux",
   "enabledPlugins": {
 {% for plugin in claude_plugins %}
     "{{ plugin }}": true{{ "," if not loop.last else "" }}
