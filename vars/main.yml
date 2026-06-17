@@ -20,7 +20,8 @@ homebrew_taps:
 homebrew_packages:
   - ansible
   - bat
-  - gopls
+  # gopls is installed via go_tools (go install …@latest) for a fresher build;
+  # not listed here to avoid a second, older Homebrew copy on PATH.
   - jdtls
   - typescript-language-server
   - caddy
@@ -72,8 +73,6 @@ homebrew_packages:
   - rbenv
   - ruby-build
   - jd
-  - jdtls
-  - typescript-language-server
 
 homebrew_casks:
   - bitwarden
@@ -126,7 +125,11 @@ claude_plugins:
   - code-simplifier@claude-plugins-official
   - claude-md-management@claude-plugins-official
   - playwright@claude-plugins-official
+  # LSP servers for Claude Code's native `LSP` tool (gopls / jdtls /
+  # typescript-language-server installed via Homebrew + go_tools below).
+  - gopls-lsp@claude-plugins-official
   - typescript-lsp@claude-plugins-official
+  - jdtls-lsp@claude-plugins-official
   - plugin-dev@claude-plugins-official
   - skill-creator@claude-plugins-official
   - vercel@claude-plugins-official
