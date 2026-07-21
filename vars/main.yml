@@ -81,6 +81,7 @@ homebrew_casks:
   #- jumpcut
   - licecap
   - neovide
+  - obsidian
   #- ngrok
 
 # Casks that require sudo for .pkg installation (installed separately)
