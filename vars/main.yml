@@ -112,6 +112,25 @@ go_tools:
   - github.com/go-gremlins/gremlins/cmd/gremlins@latest
   - golang.org/x/tools/gopls@latest
 
+# Obsidian
+# Vault path (override per-machine in vars/local.yml if it lives elsewhere).
+obsidian_vault_dir: "{{ ansible_facts['env']['HOME'] }}/Documents/Obsidian Vault"
+# Vault subfolders to ensure exist (match the paths in the config files below).
+obsidian_vault_folders:
+  - Journal
+  - Templates
+  - Attachments
+# .obsidian config files seeded from files/obsidian/config/. workspace.json is
+# deliberately excluded — it's volatile per-session UI state, not config.
+obsidian_config_files:
+  - app.json
+  - appearance.json
+  - backlink.json
+  - core-plugins.json
+  - daily-notes.json
+  - graph.json
+  - templates.json
+
 # Claude Code
 claude_dir: "{{ ansible_facts['env']['HOME'] }}/.claude"
 

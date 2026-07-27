@@ -58,6 +58,10 @@
       ansible.builtin.import_tasks: tasks/development.yml
       tags: [development]
 
+    - name: Include Obsidian configuration tasks
+      ansible.builtin.import_tasks: tasks/obsidian.yml
+      tags: [obsidian]
+
     - name: Include Claude Code setup tasks
       ansible.builtin.import_tasks: tasks/claude.yml
       tags: [claude, ai]

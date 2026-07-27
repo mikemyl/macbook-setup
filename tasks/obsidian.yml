@@ -1,0 +1,49 @@
+---
+# Obsidian config: seeds a vault's .obsidian settings and the Daily Note
+# template from the repo. Source of truth for a fresh-machine setup.
+#
+# One-directional (repo -> vault): re-running reverts local UI-driven setting
+# changes back to the committed versions. To keep a change you made in the
+# Obsidian UI, copy the file from the vault's .obsidian/ into
+# files/obsidian/config/ and commit it. See docs/obsidian.md.
+#
+# Skips cleanly if the vault doesn't exist (e.g. Obsidian not yet set up).
+
+- name: Check for Obsidian vault
+  ansible.builtin.stat:
+    path: "{{ obsidian_vault_dir }}"
+  register: obsidian_vault
+
+- name: Warn if Obsidian vault is missing
+  ansible.builtin.debug:
+    msg: "Obsidian vault not found at '{{ obsidian_vault_dir }}' — skipping. Create the vault in Obsidian first, or set obsidian_vault_dir in vars/local.yml."
+  when: not obsidian_vault.stat.exists
+
+- name: Configure Obsidian vault
+  when: obsidian_vault.stat.exists
+  block:
+    - name: Ensure .obsidian config directory exists
+      ansible.builtin.file:
+        path: "{{ obsidian_vault_dir }}/.obsidian"
+        state: directory
+        mode: '0755'
+
+    - name: Ensure vault subfolders exist
+      ansible.builtin.file:
+        path: "{{ obsidian_vault_dir }}/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ obsidian_vault_folders }}"
+
+    - name: Deploy .obsidian config files
+      ansible.builtin.copy:
+        src: "obsidian/config/{{ item }}"
+        dest: "{{ obsidian_vault_dir }}/.obsidian/{{ item }}"
+        mode: '0644'
+      loop: "{{ obsidian_config_files }}"
+
+    - name: Deploy Daily Note template
+      ansible.builtin.copy:
+        src: "obsidian/Templates/Daily Note.md"
+        dest: "{{ obsidian_vault_dir }}/Templates/Daily Note.md"
+        mode: '0644'

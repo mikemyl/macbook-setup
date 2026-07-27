@@ -22,6 +22,7 @@ ansible-playbook -i inventory.yml setup.yml --tags development
 ansible-playbook -i inventory.yml setup.yml --tags environment
 ansible-playbook -i inventory.yml setup.yml --tags fonts
 ansible-playbook -i inventory.yml setup.yml --tags nvim
+ansible-playbook -i inventory.yml setup.yml --tags obsidian
 
 # Syntax check
 ansible-playbook -i inventory.yml setup.yml --syntax-check
@@ -50,6 +51,7 @@ Each file handles one concern, tagged for independent execution:
 - `environment.yml` - LaunchAgent for GUI app environment variables (SSH_AUTH_SOCK, PATH)
 - `fonts.yml` - Monaco Nerd Font installation
 - `nvim-config.yml` - Neovim init.lua and IdeaVim config
+- `obsidian.yml` - Obsidian vault `.obsidian` config + Daily Note template (repo → vault, skips if vault absent). See `docs/obsidian.md`.
 - `development.yml` - ~/src directory, workspace symlink, git repo cloning
 
 ### Templates (`templates/`)
