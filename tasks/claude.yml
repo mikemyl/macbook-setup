@@ -55,6 +55,29 @@
     dest: "{{ claude_dir }}/settings.json"
     mode: '0644'
 
+# ── MCP servers (user scope) ─────────────────────────────────────────────────
+# settings.json carries no mcpServers key; user-scope servers live in
+# ~/.claude.json and are managed through the CLI.
+
+- name: Check which user-scope MCP servers exist
+  ansible.builtin.command: "claude mcp get {{ item.name }}"
+  loop: "{{ claude_mcp_servers }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: claude_mcp_state
+  changed_when: false
+  failed_when: false
+
+- name: Register missing user-scope MCP servers
+  ansible.builtin.command: >
+    claude mcp add --scope user
+    --transport {{ item.item.transport }}
+    {{ item.item.name }} {{ item.item.url }}
+  loop: "{{ claude_mcp_state.results }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when: item.rc != 0
+
 # ── Statusline ────────────────────────────────────────────────────────────────
 
 - name: Create Claude hooks directory

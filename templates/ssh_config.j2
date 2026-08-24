@@ -1,0 +1,25 @@
+{{ ansible_managed | comment }}
+# Managed by macbook-setup (tasks/ssh.yml). Edit vars/main.yml, not this file.
+
+{{ ssh_hosts_extra }}
+
+# --- GitHub: several accounts, one Bitwarden agent -------------------------
+#
+# IdentityAgent is set per host rather than relied upon from SSH_AUTH_SOCK, so
+# ssh finds the agent even in a shell that never sourced .zshrc — a cron job, a
+# GUI app, an IDE terminal, or a session started before the LaunchAgent ran.
+#
+# IdentityFile names the PUBLIC key; the private half lives in Bitwarden. With
+# IdentitiesOnly, ssh offers exactly that one identity. Without it the agent
+# volunteers every key it holds and GitHub logs you in as whichever it accepts
+# first, which is how a personal repo ends up pushed from a work account.
+{% for id in ssh_github_identities %}
+
+# {{ id.account }}
+Host {{ id.hosts | join(' ') }}
+    HostName github.com
+    User git
+    IdentityAgent {{ bitwarden_ssh_agent_sock }}
+    IdentityFile ~/.ssh/{{ id.key }}
+    IdentitiesOnly yes
+{% endfor %}

@@ -1,0 +1,56 @@
+---
+# SSH configuration
+# - points the canonical agent socket at whichever one Bitwarden really created
+# - pins one GitHub identity per host alias so accounts can't be confused
+
+- name: Ensure .ssh directory exists with strict permissions
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/.ssh"
+    state: directory
+    mode: '0700'
+
+- name: Check for the sandboxed Bitwarden agent socket
+  ansible.builtin.stat:
+    path: "{{ bitwarden_ssh_agent_sock_sandboxed }}"
+  register: bw_sandboxed_sock
+
+- name: Check what sits at the canonical agent socket path
+  ansible.builtin.stat:
+    path: "{{ bitwarden_ssh_agent_sock }}"
+    follow: false
+  register: bw_canonical_sock
+
+# The sandboxed build creates its socket inside the app container, so the
+# canonical path everything else points at has to lead there. Skipped when the
+# canonical path is already a real socket, which is the direct-download build
+# creating it where it says it does — linking over that would break it.
+- name: Link the canonical agent socket to the sandboxed one
+  ansible.builtin.file:
+    src: "{{ bitwarden_ssh_agent_sock_sandboxed }}"
+    dest: "{{ bitwarden_ssh_agent_sock }}"
+    state: link
+    force: true
+  when:
+    - bw_sandboxed_sock.stat.exists
+    - not (bw_canonical_sock.stat.exists and bw_canonical_sock.stat.issock | default(false))
+
+# ssh applies private-key permission checks to whatever IdentityFile names, and
+# refuses anything group- or world-readable — even a public key, which is
+# normally 0644. A rejected identity plus IdentitiesOnly leaves nothing to
+# offer, and the failure reads as a plain "Permission denied (publickey)".
+- name: Tighten permissions on the pinned public keys
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/.ssh/{{ item.key }}"
+    mode: '0600'
+    state: file
+  loop: "{{ ssh_github_identities }}"
+  loop_control:
+    label: "{{ item.key }}"
+  failed_when: false
+
+- name: Install ssh config
+  ansible.builtin.template:
+    src: templates/ssh_config.j2
+    dest: "{{ ansible_facts['env']['HOME'] }}/.ssh/config"
+    mode: '0600'
+    backup: true

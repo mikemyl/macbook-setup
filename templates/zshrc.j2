@@ -34,6 +34,18 @@ export {{ var }}="{{ path }}"
 export {{ var }}="{{ value }}"
 {% endfor %}
 export PATH="{{ (extra_path_dirs + extra_path_dirs_macos) | join(':') }}:$PATH"
+
+# Bitwarden's macOS build is sandboxed, so the agent socket it advertises at
+# ~/.bitwarden-ssh-agent.sock actually lives inside its container. Take the
+# first path that is really a socket, so a shell has a working agent even if
+# the symlink from tasks/ssh.yml is missing or Bitwarden started after login.
+for _bw_sock in "{{ bitwarden_ssh_agent_sock }}" "{{ bitwarden_ssh_agent_sock_sandboxed }}"; do
+  if [ -S "$_bw_sock" ]; then
+    export SSH_AUTH_SOCK="$_bw_sock"
+    break
+  fi
+done
+unset _bw_sock
 {% if extra_shell_config %}
 
 # Machine-specific config

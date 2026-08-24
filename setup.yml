@@ -42,6 +42,10 @@
       ansible.builtin.import_tasks: tasks/environment.yml
       tags: [environment, env]
 
+    - name: Include SSH configuration tasks
+      ansible.builtin.import_tasks: tasks/ssh.yml
+      tags: [ssh]
+
     - name: Include font installation tasks
       ansible.builtin.import_tasks: tasks/fonts.yml
       tags: [fonts]

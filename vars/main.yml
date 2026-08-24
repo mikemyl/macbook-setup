@@ -91,9 +91,56 @@ homebrew_casks_sudo:
 # Fonts (manually installed - not in Homebrew)
 monaco_nerd_font_url: "https://github.com/thep0y/monaco-nerd-font/releases/download/v0.2.1/MonacoNerdFont.zip"
 
+# Bitwarden's SSH agent socket.
+#
+# The macOS build is SANDBOXED, so the `~` it writes the socket into is its own
+# container, not the real home directory — the socket lands at
+# ~/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock.
+# Pointing SSH_AUTH_SOCK at the advertised path yields a socket that never
+# exists, no agent, and every ssh key silently unusable.
+#
+# Everything here points at the CANONICAL path; tasks/ssh.yml links it to
+# whichever socket the installed build actually creates, so this stays correct
+# for both the sandboxed and the direct-download build.
+bitwarden_ssh_agent_sock: "{{ ansible_facts['env']['HOME'] }}/.bitwarden-ssh-agent.sock"
+bitwarden_ssh_agent_sock_sandboxed: "{{ ansible_facts['env']['HOME'] }}/Library/Containers/com.bitwarden.desktop/Data/.bitwarden-ssh-agent.sock"
+
 # Environment variables - set via LaunchAgent for GUI apps and .zshrc for shell
 env_vars_macos:
-  SSH_AUTH_SOCK: "{{ ansible_facts['env']['HOME'] }}/.bitwarden-ssh-agent.sock"
+  SSH_AUTH_SOCK: "{{ bitwarden_ssh_agent_sock }}"
+
+# GitHub identities: one agent, several accounts.
+#
+# Each host alias pins ONE public key with IdentitiesOnly. Without that pinning
+# ssh offers the agent's keys in its own order and GitHub authenticates you as
+# whichever it accepts first — so a personal repo can quietly be pushed with an
+# enterprise identity. The key files are the PUBLIC halves: the private halves
+# live in Bitwarden and never touch the disk.
+#
+# `github.com` is the personal account, so a plain github.com URL can only ever
+# act as you. Enterprise work is explicit: git@github-busi:ORG/repo.git
+# Each entry lists every alias that should use that identity. Keeping the
+# explicit per-account alias alongside the default matters: remotes already
+# cloned as git@github-mikemyl:... keep resolving, and an explicit alias is the
+# clearest way to state which account a repo belongs to.
+ssh_github_identities:
+  - hosts: [github.com, github-mikemyl]
+    key: id_github_mikemyl.pub
+    account: "mikemyl — personal, public GitHub (the default for github.com)"
+  - hosts: [github-busi]
+    key: id_github_busi.pub
+    account: "Busi — enterprise"
+  - hosts: [github-yesss]
+    key: id_github_yesss.pub
+    account: "Yesssss — enterprise"
+
+# Non-GitHub ssh hosts, copied verbatim into ~/.ssh/config.
+ssh_hosts_extra: |
+  Host str str.keroshospitality.com analytics analytics.keroshospitality.com keros
+      Hostname 46.225.166.91
+      User root
+      ServerAliveInterval 240
+      Port 14623
 
 # Additional paths to add to PATH
 extra_path_dirs_macos:
@@ -133,6 +180,18 @@ obsidian_config_files:
 
 # Claude Code
 claude_dir: "{{ ansible_facts['env']['HOME'] }}/.claude"
+
+# Built-in output style used in settings.json ("Concise" leads with the result
+# and drops preamble/narration). Requires Claude Code >= 2.1.237.
+claude_output_style: Concise
+
+# User-scope MCP servers, registered with `claude mcp add --scope user`
+# (settings.json has no mcpServers key). Remote servers that need OAuth are
+# added here but must be authenticated once per machine with `/mcp`.
+claude_mcp_servers:
+  - name: mobbin
+    transport: http
+    url: "https://api.mobbin.com/mcp"
 
 # Plugins enabled in settings.json (auto-installed by Claude Code)
 # Extra plugin marketplaces (git repos with .claude-plugin marker)
