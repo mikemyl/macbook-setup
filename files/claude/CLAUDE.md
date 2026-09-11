@@ -6,6 +6,7 @@
 ## Practices
 
 - ATDD is mandatory. Acceptance scenarios must be defined before implementation. If there are no established patterns / for IaC repos, ask me before introducing new testing strategies etc. 
+- BUT a test must be able to fail for a reason other than "I changed the code I just wrote". If the only oracle is the implementation, it does not go in.
 - Domain-Driven Design where applicable (ubiquitous language, bounded contexts, value objects)
 - Functional patterns preferred (immutability, pure functions, composition)
 - TypeScript strict mode on TS projects
