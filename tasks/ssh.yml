@@ -34,6 +34,31 @@
     - bw_sandboxed_sock.stat.exists
     - not (bw_canonical_sock.stat.exists and bw_canonical_sock.stat.issock | default(false))
 
+# Bitwarden's export dialog lets you type any filename for the public half, so
+# it's easy to save it under the wrong name and only discover the mismatch
+# later as a plain "Permission denied (publickey)" from ssh, with no mention of
+# the missing file. Not every identity here is provisioned on every machine
+# (e.g. enterprise accounts on a personal laptop), so warn instead of failing
+# the run.
+- name: Check the pinned public keys exist under their expected names
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['env']['HOME'] }}/.ssh/{{ item.key }}"
+  loop: "{{ ssh_github_identities }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: ssh_pinned_key_stats
+
+- name: Warn about pinned public keys that are missing
+  ansible.builtin.debug:
+    msg: >-
+      ~/.ssh/{{ item.item.key }} is missing ({{ item.item.account }}).
+      If you need this identity, export the public key from Bitwarden and
+      save it under this exact filename.
+  loop: "{{ ssh_pinned_key_stats.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  when: not item.stat.exists
+
 # ssh applies private-key permission checks to whatever IdentityFile names, and
 # refuses anything group- or world-readable — even a public key, which is
 # normally 0644. A rejected identity plus IdentitiesOnly leaves nothing to

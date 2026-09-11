@@ -77,7 +77,6 @@ homebrew_packages:
 homebrew_casks:
   - bitwarden
   - brave-browser
-  - jetbrains-toolbox
   #- jumpcut
   - licecap
   - neovide
@@ -87,6 +86,7 @@ homebrew_casks:
 # Casks that require sudo for .pkg installation (installed separately)
 homebrew_casks_sudo:
   - karabiner-elements
+  - jetbrains-toolbox
 
 # Fonts (manually installed - not in Homebrew)
 monaco_nerd_font_url: "https://github.com/thep0y/monaco-nerd-font/releases/download/v0.2.1/MonacoNerdFont.zip"
