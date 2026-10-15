@@ -214,6 +214,7 @@ claude_plugins:
   - vercel@claude-plugins-official
   - cloudflare@cloudflare
   - verified-development@verified-development
+  - cc-plugin-you-should-know@builtin
 
 # Power management (pmset). AC never idle-sleeps so remote sessions (Claude Code,
 # VNC, SSH) survive hours of idle; battery still sleeps to preserve charge.
