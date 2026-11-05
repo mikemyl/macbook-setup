@@ -95,6 +95,14 @@ homebrew_casks_sudo:
 homebrew_packages_local: []
 homebrew_casks_local: []
 
+# yt-dlp user config (tasks/yt-dlp.yml). Written only when yt-dlp is in a Homebrew list.
+# One option per line in ~/.config/yt-dlp/config.
+ytdlp_config_dir: "{{ ansible_facts['env']['HOME'] }}/.config/yt-dlp"
+ytdlp_options:
+  # Brave cookies, for age-gated / members-only content. macOS asks once for
+  # Keychain access to "Brave Safe Storage".
+  - --cookies-from-browser brave
+
 # Fonts (manually installed - not in Homebrew)
 monaco_nerd_font_url: "https://github.com/thep0y/monaco-nerd-font/releases/download/v0.2.1/MonacoNerdFont.zip"
 

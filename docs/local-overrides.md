@@ -35,6 +35,7 @@ With no `vars/local.yml`, the playbook uses only the defaults in `vars/main.yml`
 | `homebrew_casks_local`    | `[]`                      | Added to `homebrew_casks`                  |
 | `mac_hostname`            | —                         | See `docs/lan-hostnames.md`                |
 | `obsidian_vault_dir`      | `~/Documents/Obsidian Vault` | See `docs/obsidian.md`                  |
+| `ytdlp_options`           | Brave cookies             | Lines of `~/.config/yt-dlp/config` (written only if yt-dlp is installed) |
 | `smack_enabled`           | `false`                   | Builds Smack (`tasks/smack.yml`)           |
 
 Any other variable in `vars/main.yml` can also be overridden here.

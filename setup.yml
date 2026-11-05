@@ -67,6 +67,11 @@
       when: smack_enabled | bool
       tags: [smack]
 
+    - name: Include yt-dlp configuration tasks
+      ansible.builtin.import_tasks: tasks/yt-dlp.yml
+      when: "'yt-dlp' in (homebrew_packages + homebrew_packages_local)"
+      tags: [yt-dlp]
+
     - name: Include Obsidian configuration tasks
       ansible.builtin.import_tasks: tasks/obsidian.yml
       tags: [obsidian]
