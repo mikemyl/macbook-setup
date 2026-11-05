@@ -23,6 +23,7 @@ ansible-playbook -i inventory.yml setup.yml --tags environment
 ansible-playbook -i inventory.yml setup.yml --tags fonts
 ansible-playbook -i inventory.yml setup.yml --tags nvim
 ansible-playbook -i inventory.yml setup.yml --tags obsidian
+ansible-playbook -i inventory.yml setup.yml --tags smack   # needs smack_enabled: true in vars/local.yml
 
 # Syntax check
 ansible-playbook -i inventory.yml setup.yml --syntax-check
@@ -53,6 +54,7 @@ Each file handles one concern, tagged for independent execution:
 - `nvim-config.yml` - Neovim init.lua and IdeaVim config
 - `obsidian.yml` - Obsidian vault `.obsidian` config + Daily Note template (repo → vault, skips if vault absent). See `docs/obsidian.md`.
 - `development.yml` - ~/src directory, workspace symlink, git repo cloning
+- `smack.yml` - Builds Smack from the `mikemyl/smack` fork at `smack_version` and installs it to `/Applications`. Off by default; enable per machine via `smack_enabled: true` in `vars/local.yml` (gitignored). Requires full Xcode. Rebuilds only when the pin differs from `~/.local/state/macbook-setup/smack.commit`.
 
 ### Templates (`templates/`)
 

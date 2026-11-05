@@ -62,6 +62,11 @@
       ansible.builtin.import_tasks: tasks/development.yml
       tags: [development]
 
+    - name: Include Smack build tasks
+      ansible.builtin.import_tasks: tasks/smack.yml
+      when: smack_enabled | bool
+      tags: [smack]
+
     - name: Include Obsidian configuration tasks
       ansible.builtin.import_tasks: tasks/obsidian.yml
       tags: [obsidian]

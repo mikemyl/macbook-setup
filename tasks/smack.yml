@@ -1,0 +1,88 @@
+---
+# Smack (system monitor in the notch/menu bar), built from our fork at a pinned commit.
+# Upstream releases are ad-hoc signed and not notarized, and the upstream cask strips the
+# quarantine flag, so we build the reviewed source instead. Rebuilds only when the pinned
+# commit differs from the one recorded at the last install.
+
+- name: Clone Smack source at the pinned commit
+  ansible.builtin.git:
+    repo: "{{ smack_repo }}"
+    dest: "{{ smack_src_dir }}"
+    version: "{{ smack_version }}"
+    force: false
+  register: smack_source
+  # git url.insteadOf rewrites make the module report remote_url_changed on every run;
+  # only a commit move is a real change.
+  changed_when: smack_source.before != smack_source.after
+
+- name: Check for installed Smack.app
+  ansible.builtin.stat:
+    path: "{{ smack_install_dir }}/Smack.app"
+  register: smack_app
+
+- name: Read the installed Smack commit
+  ansible.builtin.slurp:
+    src: "{{ smack_marker }}"
+  register: smack_marker_file
+  failed_when: false
+
+- name: Decide whether Smack needs a build
+  ansible.builtin.set_fact:
+    smack_needs_build: >-
+      {{ not smack_app.stat.exists
+         or (smack_marker_file.content | default('') | b64decode | trim) != smack_source.after }}
+
+- name: Check that Xcode is installed
+  ansible.builtin.stat:
+    path: "{{ smack_developer_dir }}"
+  register: smack_xcode
+  when: smack_needs_build
+
+- name: Require Xcode for the Smack build
+  ansible.builtin.assert:
+    that: smack_xcode.stat.exists
+    fail_msg: >-
+      Smack needs full Xcode at {{ smack_developer_dir }}; the Command Line Tools
+      toolchain has no SwiftUI macros.
+  when: smack_needs_build
+
+- name: Build Smack.app
+  ansible.builtin.command:
+    cmd: Scripts/build-app.sh release
+    chdir: "{{ smack_src_dir }}"
+  environment:
+    DEVELOPER_DIR: "{{ smack_developer_dir }}"
+  when: smack_needs_build and not ansible_check_mode
+  changed_when: true
+
+# Stage next to the target so the final mv is a rename on the same volume.
+# A running Smack keeps its old binary; quit it so the next launch uses the new build.
+- name: Install Smack.app
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      target="{{ smack_install_dir }}/Smack.app"
+      staging="{{ smack_install_dir }}/.Smack.app.new"
+      rm -rf "$staging"
+      ditto "{{ smack_src_dir }}/dist/Smack.app" "$staging"
+      pkill -x Smack || true
+      rm -rf "$target"
+      mv "$staging" "$target"
+      # Leave no second Smack.app behind for Spotlight/launchers to index and start.
+      rm -rf "{{ smack_src_dir }}/dist"
+    executable: /bin/bash
+  when: smack_needs_build and not ansible_check_mode
+  changed_when: true
+
+- name: Create the Smack marker directory
+  ansible.builtin.file:
+    path: "{{ smack_marker | dirname }}"
+    state: directory
+    mode: '0755'
+
+- name: Record the installed Smack commit
+  ansible.builtin.copy:
+    content: "{{ smack_source.after }}\n"
+    dest: "{{ smack_marker }}"
+    mode: '0644'
+  when: smack_needs_build

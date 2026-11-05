@@ -161,6 +161,16 @@ go_tools:
   - github.com/go-gremlins/gremlins/cmd/gremlins@latest
   - golang.org/x/tools/gopls@latest
 
+# Smack — built from our fork (see tasks/smack.yml). Bump smack_version to a reviewed commit.
+# Off by default; enable per machine with `smack_enabled: true` in vars/local.yml.
+smack_enabled: false
+smack_repo: "https://github.com/mikemyl/smack.git"
+smack_version: "3f9fa3f18e3a243af94eb77e74d3737f585b06df"  # build-fixes: upstream v0.7.0+1 + Swift 6.2 fix
+smack_src_dir: "{{ src_dir }}/smack"
+smack_install_dir: /Applications
+smack_developer_dir: /Applications/Xcode.app/Contents/Developer
+smack_marker: "{{ ansible_facts['env']['HOME'] }}/.local/state/macbook-setup/smack.commit"
+
 # Obsidian
 # Vault path (override per-machine in vars/local.yml if it lives elsewhere).
 obsidian_vault_dir: "{{ ansible_facts['env']['HOME'] }}/Documents/Obsidian Vault"
