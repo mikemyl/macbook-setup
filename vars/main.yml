@@ -20,6 +20,7 @@ homebrew_taps:
 homebrew_packages:
   - ansible
   - bat
+  - bitwarden-cli
   # gopls is installed via go_tools (go install …@latest) for a fresher build;
   # not listed here to avoid a second, older Homebrew copy on PATH.
   - jdtls
@@ -81,6 +82,7 @@ homebrew_casks:
   - licecap
   - neovide
   - obsidian
+  - stats
   #- ngrok
 
 # Casks that require sudo for .pkg installation (installed separately)
