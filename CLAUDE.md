@@ -42,6 +42,7 @@ ansible-galaxy collection install community.general
 ### Where things are configured
 
 - **`vars/main.yml`** - Central configuration: Homebrew package lists, environment variables, PATH additions, git repos, font URLs. This is the primary file to edit when adding/removing tools.
+- **`vars/local.yml`** - Per-machine overrides (gitignored, loaded after `vars/main.yml`). Committed per machine as `vars/local.<machine>.yml`; `vars/local.yml` is a symlink to it. Machine-only Homebrew packages/casks go in `homebrew_packages_local` / `homebrew_casks_local`. See `docs/local-overrides.md`.
 - **`inventory.yml`** - Ansible inventory (localhost).
 
 ### Task modules (`tasks/`)

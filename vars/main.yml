@@ -90,6 +90,11 @@ homebrew_casks_sudo:
   - karabiner-elements
   - jetbrains-toolbox
 
+# Per-machine extras. Leave empty here; set them in vars/local.yml.
+# They are added to the lists above. See docs/local-overrides.md.
+homebrew_packages_local: []
+homebrew_casks_local: []
+
 # Fonts (manually installed - not in Homebrew)
 monaco_nerd_font_url: "https://github.com/thep0y/monaco-nerd-font/releases/download/v0.2.1/MonacoNerdFont.zip"
 

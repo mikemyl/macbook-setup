@@ -23,7 +23,7 @@
 
 - name: Install Homebrew packages
   community.general.homebrew:
-    name: "{{ homebrew_packages }}"
+    name: "{{ homebrew_packages + homebrew_packages_local }}"
     state: present
 
 - name: Install Homebrew casks
@@ -32,7 +32,7 @@
     state: present
     accept_external_apps: true
     install_options: adopt
-  loop: "{{ homebrew_casks }}"
+  loop: "{{ homebrew_casks + homebrew_casks_local }}"
 
 - name: Remind about casks requiring manual sudo installation
   ansible.builtin.debug:

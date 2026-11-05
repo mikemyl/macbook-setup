@@ -1,0 +1,22 @@
+---
+# Machine-specific overrides for the personal MacBook.
+# Committed as a record. setup.yml reads vars/local.yml (gitignored) only.
+# On this Mac vars/local.yml is a symlink to this file.
+# On a new Mac: cp vars/local.macbook.yml vars/local.yml   (see docs/local-overrides.md)
+
+# Stable LAN hostname → reachable as macbook.local and macbook.fritz.box.
+mac_hostname: macbook
+obsidian_vault_dir: '/Users/mike/Documents/Obsidian Vault'
+
+# Build and install Smack from the fork (personal laptop only).
+smack_enabled: true
+
+# Extra Homebrew packages for this Mac only.
+homebrew_packages_local:
+  - yt-dlp
+  - ffmpeg   # yt-dlp needs it to merge separate video+audio streams (best quality)
+  - get_iplayer
+homebrew_casks_local:
+  - vlc
+  - raspberry-pi-imager
+  - balenaetcher
