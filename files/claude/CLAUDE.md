@@ -6,6 +6,7 @@
 ## Practices
 
 - ATDD is mandatory. Acceptance scenarios must be defined before implementation. If there are no established patterns / for IaC repos, ask me before introducing new testing strategies etc. 
+- Infra and config changes are the exception: a flag, a compose or sysctl setting, an alert threshold, a pinned version get no test first. Verify by observing the state after the apply and put the command and its output in the report. Commit a check only for an invariant across two places that can drift (as a static check of the templates, not a script against prod) or a runbook step that will run again. Scripts with logic are code: test first.
 - BUT a test must be able to fail for a reason other than "I changed the code I just wrote". If the only oracle is the implementation, it does not go in.
 - Domain-Driven Design where applicable (ubiquitous language, bounded contexts, value objects)
 - Functional patterns preferred (immutability, pure functions, composition)
