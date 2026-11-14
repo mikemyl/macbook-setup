@@ -54,6 +54,7 @@ What it gets from each post:
 | Audio/video attachment (mp3, m4a, ...) | yt-dlp | original file name |
 | Other attachment (pdf, gp, jpg, ...) | curl, Patreon API | original file name (`<media id>.<ext>` if Patreon has no name) |
 | Post cover image / video thumbnail | not downloaded | |
+| Links in the post text (Google Drive/Docs, Dropbox, ...) | not downloaded | listed in `links.txt` as `NNN <link>` |
 
 Tags (yt-dlp, `--embed-metadata`): album = collection title, track = `NNN`,
 title = file name or video title, artist = creator. Players (DS audio, Jellyfin,
@@ -68,6 +69,9 @@ Resume and errors:
 - Posts that fail go to `failed.txt` with the reason (`no media in post` for text-only
   posts and polls, `yt-dlp error` for broken embeds). The run continues. The file is
   removed when nothing failed.
+- A post with only external links is not a failure: check `links.txt` and get those
+  files by hand (a Google Slides/Docs link shared by link exports with
+  `https://docs.google.com/presentation/d/<id>/export/pdf`).
 
 Notes:
 

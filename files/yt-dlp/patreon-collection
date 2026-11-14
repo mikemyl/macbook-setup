@@ -103,7 +103,7 @@ for i in "${!post_ids[@]}"; do
     url="https://www.patreon.com/posts/$pid"
     echo "[$num/$total] $url"
 
-    post=$(api "posts/$pid?include=attachments_media&fields[post]=title,current_user_can_view&fields[media]=file_name,mimetype,download_url&json-api-use-default-includes=false") || {
+    post=$(api "posts/$pid?include=attachments_media&fields[post]=title,current_user_can_view,content,content_json_string&fields[media]=file_name,mimetype,download_url&json-api-use-default-includes=false") || {
         fail "cannot read post from the Patreon API"
         continue
     }
@@ -177,12 +177,25 @@ for i in "${!post_ids[@]}"; do
             fail "cannot download file $name"
         fi
     done <<<"$files"
+
+    # External links in the post text (Google Drive/Docs, Dropbox, ...): not downloaded,
+    # listed in links.txt as "NNN <link>" so that nothing is lost.
+    links=$(jq -r '.data.attributes | (.content // ""), (.content_json_string // "")' <<<"$post" |
+        grep -oE 'https?://[^"\\<> ]+' | grep -vE '^https?://([a-z0-9-]+\.)*patreon(usercontent)?\.com' | sort -u || true)
+    n_links=0
+    while IFS= read -r link; do
+        [[ -n $link ]] || continue
+        n_links=$((n_links + 1))
+        grep -qxF "$num $link" links.txt 2>/dev/null || echo "$num $link" >>links.txt
+    done <<<"$links"
+    [[ $n_links -eq 0 ]] || echo "  links: $n_links (see links.txt)"
+
     if [[ $videos_only == yes && $n_files -gt 0 ]]; then
         echo "  skipped $n_files file(s) (--videos-only)"
     fi
 
     if [[ $has_video == no && $n_files -eq 0 ]]; then
-        fail "no media in post"
+        [[ $n_links -gt 0 ]] || fail "no media in post"
         [[ $flat == yes ]] || rmdir "$post_dir" 2>/dev/null || true
     fi
 done
