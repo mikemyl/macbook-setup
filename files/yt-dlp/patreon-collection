@@ -1,0 +1,197 @@
+#!/bin/bash
+# Downloads every post of a Patreon collection, in collection order: videos and audio
+# through yt-dlp, attachments (PDFs, tabs, diagrams, ...) through the Patreon API.
+# Reads cookies from Brave once, so log in to Patreon in Brave first.
+#
+# Usage: patreon-collection <collection URL or ID> [--flat] [--videos-only] [--mp3] [yt-dlp options...]
+#        (any order; arguments that are not the URL or these options go to yt-dlp)
+# Example: patreon-collection https://www.patreon.com/collection/878272 -f 'bv*[height<=1080]+ba'
+#
+# Default: one folder per post  ./<collection title>/NNN <post title>/<files>
+# --flat:  one folder for all   ./<collection title>/NNN <file>   (video-only collections)
+# --videos-only: only what yt-dlp gets (video, audio); skip attachments.
+# --mp3:   also write an mp3 of each video, next to it (to-mp3; tags are kept).
+# NNN = position in the collection. Run it again to resume: archive.txt and existing
+# files are skipped. Keep the same layout on resume: archive.txt also skips videos
+# that were downloaded in the other layout.
+# Posts that fail (no media, broken embeds) go to failed.txt; the run continues.
+# Managed by macbook-setup (files/yt-dlp/patreon-collection). Local edits are overwritten.
+set -euo pipefail
+
+UA='Mozilla/5.0'
+here=$(cd "$(dirname "$0")" && pwd)
+API='https://www.patreon.com/api'
+
+usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+
+# Makes a string safe as one path component.
+clean() {
+    local s=${1//\//-}
+    s=${s//:/ -}
+    s=${s//$'\n'/ }
+    s=${s#"${s%%[![:space:]]*}"}
+    s=${s%"${s##*[![:space:]]}"}
+    s=${s#.}
+    printf '%s' "${s:0:150}"
+}
+
+api() { curl -fsS -g -b "$jar" -A "$UA" "$API/$1&json-api-version=1.0"; }
+
+# Own options can be anywhere. The collection is the first collection URL, or a bare
+# ID as the first other argument. All other arguments go to yt-dlp.
+flat=no
+videos_only=no
+mp3=no
+id=
+first=yes
+ytdlp_args=()
+for a in "$@"; do
+    case $a in
+        --flat) flat=yes; continue ;;
+        --videos-only) videos_only=yes; continue ;;
+        --mp3) mp3=yes; continue ;;
+        -h | --help) usage ;;
+    esac
+    if [[ -z $id && $a =~ /collection/([0-9]+) ]]; then
+        id=${BASH_REMATCH[1]}
+    elif [[ -z $id && $first == yes && $a =~ ^[0-9]+$ ]]; then
+        id=$a
+    else
+        ytdlp_args+=("$a")
+    fi
+    first=no
+done
+[[ -n $id ]] || { echo "error: no Patreon collection URL or ID" >&2; usage; }
+set -- ${ytdlp_args[@]+"${ytdlp_args[@]}"}
+
+# The jar holds all Brave cookies: private dir, deleted on exit.
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+trap 'exit 130' INT TERM HUP
+jar=$tmp/cookies.txt
+echo "Reading Brave cookies..."
+yt-dlp --cookies-from-browser brave --cookies "$jar" --simulate -q --no-warnings \
+    "https://www.patreon.com/collection/$id" >/dev/null 2>&1 || true
+[[ -s $jar ]] || { echo "error: cannot read Brave cookies" >&2; exit 1; }
+chmod 600 "$jar"
+
+json=$(api "collection/$id?fields[collection]=title,post_ids") || {
+    echo "error: cannot read collection $id from the Patreon API" >&2
+    exit 1
+}
+title=$(jq -r '.data.attributes.title // empty' <<<"$json")
+read -r -a post_ids <<<"$(jq -r '.data.attributes.post_ids // [] | map(tostring) | join(" ")' <<<"$json")"
+total=${#post_ids[@]}
+[[ $total -gt 0 ]] || { echo "error: collection $id has no visible posts" >&2; exit 1; }
+
+dir=$(clean "${title:-collection-$id}")
+mkdir -p "$dir"
+cd "$dir"
+echo "Collection: ${title:-$id} ($total posts) -> $PWD"
+
+# Album tag = collection title, escaped for --parse-metadata FROM (% and : are special).
+album=${title:-collection-$id}
+album=${album//%/%%}
+album=${album//:/\\:}
+
+: >failed.txt
+fail() { echo "$num $url  $1" >>failed.txt; echo "  FAILED: $1" >&2; }
+
+for i in "${!post_ids[@]}"; do
+    pid=${post_ids[i]}
+    num=$(printf '%03d' $((i + 1)))
+    url="https://www.patreon.com/posts/$pid"
+    echo "[$num/$total] $url"
+
+    post=$(api "posts/$pid?include=attachments_media&fields[post]=title,current_user_can_view&fields[media]=file_name,mimetype,download_url&json-api-use-default-includes=false") || {
+        fail "cannot read post from the Patreon API"
+        continue
+    }
+    if [[ $(jq -r '.data.attributes.current_user_can_view' <<<"$post") == false ]]; then
+        fail "no access (tier too low?)"
+        continue
+    fi
+    # Per post: files go to "NNN <post title>/". Flat: files go here, named "NNN <file>".
+    if [[ $flat == yes ]]; then
+        post_dir=. prefix="$num "
+    else
+        post_dir="$num $(clean "$(jq -r '.data.attributes.title // "untitled"' <<<"$post")")" prefix=
+        mkdir -p "$post_dir"
+    fi
+
+    # Video and audio: yt-dlp. "No supported media" means a post without a video.
+    # Audio/video attachments keep their file name (yt-dlp alt_title, extension removed).
+    # Tags: album = collection, track = position, title = file name, artist = creator.
+    # The "@ " prefix makes yt-dlp read FROM as text, not as a field name.
+    rc=0
+    yt-dlp --no-cookies-from-browser --cookies "$jar" \
+        --download-archive "$PWD/archive.txt" -P "$post_dir" \
+        --replace-in-metadata alt_title '\.[A-Za-z0-9]{1,5}$' '' \
+        --parse-metadata '%(alt_title,title)s:%(meta_title)s' \
+        --parse-metadata "@ $album:@ (?P<album>.+)" \
+        --parse-metadata "@ $((10#$num)):@ (?P<track_number>\d+)" \
+        --embed-metadata \
+        -o "${prefix}%(alt_title,title)s.%(ext)s" \
+        "$@" "$url" 2>"$tmp/err" || rc=$?
+    cat "$tmp/err" >&2
+    has_video=yes
+    if [[ $rc -ne 0 ]]; then
+        if grep -q 'No supported media found' "$tmp/err"; then
+            has_video=no
+        else
+            fail "yt-dlp error"
+        fi
+    fi
+
+    # mp3 of each video of this post (to-mp3 skips existing mp3s, so resume works).
+    if [[ $mp3 == yes ]]; then
+        for f in "$post_dir/$prefix"*; do
+            [[ $f =~ \.(mkv|mp4|webm|mov|m4v)$ ]] || continue
+            "$here/to-mp3" "$f" || fail "cannot convert to mp3: ${f##*/}"
+        done
+    fi
+
+    # Attachments that are not audio/video (yt-dlp gets those). The post cover image (images) is skipped.
+    files=$(jq -r '.included[]? | select(.type == "media") | .id as $id | .attributes
+        | select((.mimetype // "") | test("^(audio|video)/|mpegurl"; "i") | not)
+        | (.download_url // empty) as $u
+        | (.file_name // "") as $f
+        | (if $f == "" or ($f | test("^https?://")) then "\($id).\((.mimetype // "/bin") | split("/")[1])" else $f end) as $name
+        | [$id, $name, $u] | @tsv' <<<"$post")
+    n_files=0
+    seen=$'\n'
+    while IFS=$'\t' read -r mid name furl; do
+        [[ -n $mid ]] || continue
+        n_files=$((n_files + 1))
+        [[ $videos_only == yes ]] && continue
+        name=$(clean "$name")
+        [[ $seen == *$'\n'"$name"$'\n'* ]] && name="$mid-$name"
+        seen+="$name"$'\n'
+        dest="$post_dir/$prefix$name"
+        [[ -e $dest ]] && continue
+        echo "  file: $prefix$name"
+        if curl -fsSL -A "$UA" -o "$dest.part" "$furl"; then
+            mv "$dest.part" "$dest"
+        else
+            rm -f "$dest.part"
+            fail "cannot download file $name"
+        fi
+    done <<<"$files"
+    if [[ $videos_only == yes && $n_files -gt 0 ]]; then
+        echo "  skipped $n_files file(s) (--videos-only)"
+    fi
+
+    if [[ $has_video == no && $n_files -eq 0 ]]; then
+        fail "no media in post"
+        [[ $flat == yes ]] || rmdir "$post_dir" 2>/dev/null || true
+    fi
+done
+
+failed=$(cut -d' ' -f1 failed.txt | sort -u | wc -l | tr -d ' ')
+echo "Done: $((total - failed)) of $total posts OK."
+if [[ $failed -gt 0 ]]; then
+    echo "$failed failed (see $PWD/failed.txt):"
+    cat failed.txt
+else
+    rm failed.txt
+fi

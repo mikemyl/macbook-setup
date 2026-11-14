@@ -102,6 +102,11 @@ ytdlp_options:
   # Brave cookies, for age-gated / members-only content. macOS asks once for
   # Keychain access to "Brave Safe Storage".
   - --cookies-from-browser brave
+# yt-dlp helper scripts (files/yt-dlp/) go here. Must be on PATH (see extra_path_dirs_macos).
+ytdlp_scripts_dir: "{{ ansible_facts['env']['HOME'] }}/.local/bin"
+ytdlp_scripts:
+  - patreon-collection
+  - to-mp3
 
 # Fonts (manually installed - not in Homebrew)
 monaco_nerd_font_url: "https://github.com/thep0y/monaco-nerd-font/releases/download/v0.2.1/MonacoNerdFont.zip"

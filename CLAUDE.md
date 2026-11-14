@@ -56,7 +56,7 @@ Each file handles one concern, tagged for independent execution:
 - `nvim-config.yml` - Neovim init.lua and IdeaVim config
 - `obsidian.yml` - Obsidian vault `.obsidian` config + Daily Note template (repo → vault, skips if vault absent). See `docs/obsidian.md`.
 - `development.yml` - ~/src directory, workspace symlink, git repo cloning
-- `yt-dlp.yml` - Writes `~/.config/yt-dlp/config` from `ytdlp_options` (Brave cookies by default). Runs only when `yt-dlp` is in `homebrew_packages` or `homebrew_packages_local`.
+- `yt-dlp.yml` - Writes `~/.config/yt-dlp/config` from `ytdlp_options` (Brave cookies by default) and installs `ytdlp_scripts` from `files/yt-dlp/` to `~/.local/bin` (`patreon-collection`, `to-mp3`; usage in `files/yt-dlp/README.md`). Runs only when `yt-dlp` is in `homebrew_packages` or `homebrew_packages_local`.
 - `smack.yml` - Builds Smack from the `mikemyl/smack` fork at `smack_version` and installs it to `/Applications`. Off by default; enable per machine via `smack_enabled: true` in `vars/local.yml` (gitignored). Requires full Xcode. Rebuilds only when the pin differs from `~/.local/state/macbook-setup/smack.commit`.
 
 ### Templates (`templates/`)

@@ -1,5 +1,5 @@
 ---
-# yt-dlp user config. Runs only on machines that install yt-dlp
+# yt-dlp user config and helper scripts. Runs only on machines that install yt-dlp
 # (normally through homebrew_packages_local in vars/local.yml).
 
 - name: Create yt-dlp config directory
@@ -13,3 +13,16 @@
     src: templates/yt-dlp.config.j2
     dest: "{{ ytdlp_config_dir }}/config"
     mode: '0644'
+
+- name: Create yt-dlp scripts directory
+  ansible.builtin.file:
+    path: "{{ ytdlp_scripts_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Install yt-dlp helper scripts
+  ansible.builtin.copy:
+    src: "files/yt-dlp/{{ item }}"
+    dest: "{{ ytdlp_scripts_dir }}/{{ item }}"
+    mode: '0755'
+  loop: "{{ ytdlp_scripts }}"

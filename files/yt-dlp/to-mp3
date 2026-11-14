@@ -1,0 +1,64 @@
+#!/bin/bash
+# Converts videos (or other audio) to mp3, next to the source: <name>.mp3.
+# Keeps the music tags (title, artist, album, album_artist, track, date, genre);
+# drops the rest (container and description tags).
+#
+# Usage: to-mp3 [-q N] <file or folder>...
+#   -q N    LAME VBR quality: 0 (best) .. 9 (smallest). Default 2 (about 170-210 kbps).
+#   folder  converts the videos in it (mkv mp4 webm mov m4v avi); not recursive.
+# Skips a file when its mp3 already exists. Exit code 1 if a conversion failed.
+# Managed by macbook-setup (files/yt-dlp/to-mp3). Local edits are overwritten.
+set -euo pipefail
+
+usage() { sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+
+quality=2
+while getopts 'q:h' opt; do
+    case $opt in
+        q) quality=$OPTARG ;;
+        *) usage ;;
+    esac
+done
+shift $((OPTIND - 1))
+[[ $# -ge 1 ]] || usage
+[[ $quality =~ ^[0-9]$ ]] || { echo "error: -q must be 0..9" >&2; exit 2; }
+command -v ffmpeg >/dev/null || { echo "error: ffmpeg not found" >&2; exit 1; }
+
+shopt -s nocasematch
+is_video() { [[ $1 =~ \.(mkv|mp4|webm|mov|m4v|avi)$ ]]; }
+
+failed=0
+convert() {
+    local in=$1 out=${1%.*}.mp3 tags=() kv
+    if [[ $in =~ \.mp3$ ]]; then echo "skip (already mp3): $in"; return; fi
+    if [[ -e $out ]]; then echo "skip (exists): $out"; return; fi
+    while IFS= read -r kv; do
+        tags+=(-metadata "$kv")
+    done < <(ffprobe -v error -show_entries format_tags -of json "$in" | jq -r '
+        .format.tags // {} | with_entries(.key |= ascii_downcase) | to_entries[]
+        | select(.key | IN("title", "artist", "album", "album_artist", "track", "date", "genre"))
+        | "\(.key)=\(.value | gsub("\n"; " "))"')
+    if ffmpeg -nostdin -v error -y -i "$in" -map 0:a:0 -vn -c:a libmp3lame -q:a "$quality" \
+        -map_metadata -1 -map_chapters -1 ${tags[@]+"${tags[@]}"} "${out%.mp3}.part.mp3"; then
+        mv "${out%.mp3}.part.mp3" "$out"
+        echo "mp3: $out"
+    else
+        rm -f "${out%.mp3}.part.mp3"
+        echo "error: cannot convert $in" >&2
+        failed=1
+    fi
+}
+
+for arg in "$@"; do
+    if [[ -d $arg ]]; then
+        for f in "$arg"/*; do
+            if is_video "$f"; then convert "$f"; fi
+        done
+    elif [[ -f $arg ]]; then
+        convert "$arg"
+    else
+        echo "error: not found: $arg" >&2
+        failed=1
+    fi
+done
+exit $failed
