@@ -162,6 +162,15 @@ ssh_hosts_extra: |
       ServerAliveInterval 240
       Port 14623
 
+  # Synology NAS (home-lab). Key "synology" lives in Bitwarden; the public half
+  # is ~/.ssh/id_synology.pub (export it with: ssh-add -L | grep synololgy).
+  Host batman batman.fritz.box
+      HostName batman.fritz.box
+      User tf-user
+      IdentityAgent {{ bitwarden_ssh_agent_sock }}
+      IdentityFile ~/.ssh/id_synology.pub
+      IdentitiesOnly yes
+
 # Additional paths to add to PATH
 extra_path_dirs_macos:
   - "{{ ansible_facts['env']['HOME'] }}/go/bin"
