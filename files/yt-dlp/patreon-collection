@@ -95,6 +95,8 @@ album=${album//%/%%}
 album=${album//:/\\:}
 
 : >failed.txt
+# Media items in earlier posts beyond the first of each post: track = NNN + extra.
+extra=0
 fail() { echo "$num $url  $1" >>failed.txt; echo "  FAILED: $1" >&2; }
 
 for i in "${!post_ids[@]}"; do
@@ -121,19 +123,30 @@ for i in "${!post_ids[@]}"; do
 
     # Video and audio: yt-dlp. "No supported media" means a post without a video.
     # Audio/video attachments keep their file name (yt-dlp alt_title, extension removed).
-    # Tags: album = collection, track = position, title = file name, artist = creator.
+    # Tags: album = collection, track = see below, title = file name, artist = creator.
     # The "@ " prefix makes yt-dlp read FROM as text, not as a field name.
+    # Track: NNN + extra. A post with several items is a playlist: item k gets
+    # NNN + extra + k - 1 (no playlist_index: one item, NNN + extra). yt-dlp writes the
+    # playlist size to $tmp/count also when the items are in archive.txt, so a resume
+    # numbers like a fresh run.
+    track=$((10#$num + extra))
+    rm -f "$tmp/count"
     rc=0
     yt-dlp --no-cookies-from-browser --cookies "$jar" \
         --download-archive "$PWD/archive.txt" -P "$post_dir" \
         --replace-in-metadata alt_title '\.[A-Za-z0-9]{1,5}$' '' \
         --parse-metadata '%(alt_title,title)s:%(meta_title)s' \
         --parse-metadata "@ $album:@ (?P<album>.+)" \
-        --parse-metadata "@ $((10#$num)):@ (?P<track_number>\d+)" \
+        --parse-metadata "%(playlist_index+$((track - 1))|$track)d:%(track_number)s" \
+        --print-to-file 'playlist:%(playlist_count)s' "$tmp/count" \
         --embed-metadata \
         -o "${prefix}%(alt_title,title)s.%(ext)s" \
         "$@" "$url" 2>"$tmp/err" || rc=$?
     cat "$tmp/err" >&2
+    if [[ -s $tmp/count ]]; then
+        n=$(tail -1 "$tmp/count")
+        if [[ $n =~ ^[0-9]+$ && $n -gt 1 ]]; then extra=$((extra + n - 1)); fi
+    fi
     has_video=yes
     if [[ $rc -ne 0 ]]; then
         if grep -q 'No supported media found' "$tmp/err"; then

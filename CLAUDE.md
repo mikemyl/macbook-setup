@@ -68,3 +68,5 @@ Jinja2 templates that produce dotfiles. They read variables from `vars/main.yml`
 - All tasks should be **idempotent** - check for existence before installing/downloading.
 - Use FQCNs for Ansible modules (e.g., `ansible.builtin.git`, not just `git`).
 - Configurable values go in `vars/main.yml`, not hardcoded in tasks.
+- No tests for the helper scripts in `files/` (owner decision): they are ad hoc command-line
+  tools, not deployed software. Check a change by hand on real data; fix issues when they show up.

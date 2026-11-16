@@ -56,9 +56,14 @@ What it gets from each post:
 | Post cover image / video thumbnail | not downloaded | |
 | Links in the post text (Google Drive/Docs, Dropbox, ...) | not downloaded | listed in `links.txt` as `NNN <link>` |
 
-Tags (yt-dlp, `--embed-metadata`): album = collection title, track = `NNN`,
+Tags (yt-dlp, `--embed-metadata`): album = collection title, track = see below,
 title = file name or video title, artist = creator. Players (DS audio, Jellyfin,
 VLC, Spotify local files) group each collection as one album, in order.
+
+Track number = `NNN` plus the extra media items of the posts before it. A post with
+several media items (yt-dlp sees them as a playlist) numbers them in Patreon order, one
+each. So track = `NNN` until the first post with more than one item; after it, track is
+higher than `NNN`. The mp3 from `--mp3` keeps the track of its video.
 
 Resume and errors:
 
