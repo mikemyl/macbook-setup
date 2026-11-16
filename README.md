@@ -151,3 +151,7 @@ The Ansible playbook configures this automatically, but if you need to set it up
     - **Value**: `\e\r` (escape + return)
 
 This allows Shift+Enter to work for multi-line input in Claude Code when running inside tmux.
+
+The playbook also sets the keys of the **Natural Text Editing** preset (⌥←/⌥→ word,
+⌘←/⌘→ line start/end, ⌥⌫/⌘⌫ delete word/line). The list is `iterm2_key_mappings` in
+`vars/main.yml`. Restart iTerm2 (⌘Q) to apply.

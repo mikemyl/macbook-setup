@@ -108,6 +108,21 @@ ytdlp_scripts:
   - patreon-collection
   - to-mp3
 
+# iTerm2 key mappings for the Default profile (tasks/shell.yml).
+# Shift+Enter: ESC+CR, a newline in Claude Code inside tmux. The others are the
+# "Natural Text Editing" preset (iTerm.app/Contents/Resources/PresetKeyMappings.plist).
+# key = <key code>-<modifier mask>; action 10 = send ESC + text, 11 = send hex codes.
+iterm2_key_mappings:
+  - { name: "Shift+Enter: newline (tmux)", key: "0xd-0x20000", action: 11, text: "0x1b 0xd" }
+  - { name: "Option+Left: word back", key: "0xf702-0x280000", action: 10, text: "b" }
+  - { name: "Option+Right: word forward", key: "0xf703-0x280000", action: 10, text: "f" }
+  - { name: "Cmd+Left: line start", key: "0xf702-0x300000", action: 11, text: "0x1" }
+  - { name: "Cmd+Right: line end", key: "0xf703-0x300000", action: 11, text: "0x5" }
+  - { name: "Option+Backspace: delete word", key: "0x7f-0x80000", action: 11, text: "0x1b 0x7f" }
+  - { name: "Cmd+Backspace: delete line", key: "0x7f-0x100000", action: 11, text: "0x15" }
+  - { name: "Option+Fn+Backspace: delete word forward", key: "0xf728-0x80000", action: 10, text: "d" }
+  - { name: "Fn+Backspace: delete char forward", key: "0xf728-0x0", action: 11, text: "0x4" }
+
 # Fonts (manually installed - not in Homebrew)
 monaco_nerd_font_url: "https://github.com/thep0y/monaco-nerd-font/releases/download/v0.2.1/MonacoNerdFont.zip"
 

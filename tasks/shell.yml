@@ -60,21 +60,23 @@
     dest: "{{ ansible_facts['env']['HOME'] }}/.local/bin/tmux-init"
     mode: '0755'
 
-- name: Check if iTerm2 Shift+Enter key mapping exists
-  ansible.builtin.shell:
-    cmd: /usr/libexec/PlistBuddy -c "Print ':New Bookmarks:0:Keyboard Map:0xd-0x20000:Action'" ~/Library/Preferences/com.googlecode.iterm2.plist 2>/dev/null
-    executable: /bin/bash
-  register: iterm2_shift_enter
-  changed_when: false
-  failed_when: false
-
-- name: Configure iTerm2 Shift+Enter to send ESC+Enter (for tmux)
+# Restart iTerm2 to apply. A running iTerm2 can overwrite the plist when it saves its preferences.
+- name: Configure iTerm2 key mappings
   ansible.builtin.shell: |
-    /usr/libexec/PlistBuddy -c "Delete ':New Bookmarks:0:Keyboard Map:0xd-0x20000'" ~/Library/Preferences/com.googlecode.iterm2.plist 2>/dev/null || true
-    /usr/libexec/PlistBuddy -c "Add ':New Bookmarks:0:Keyboard Map:0xd-0x20000' dict" ~/Library/Preferences/com.googlecode.iterm2.plist
-    /usr/libexec/PlistBuddy -c "Add ':New Bookmarks:0:Keyboard Map:0xd-0x20000:Action' integer 10" ~/Library/Preferences/com.googlecode.iterm2.plist
-    /usr/libexec/PlistBuddy -c "Add ':New Bookmarks:0:Keyboard Map:0xd-0x20000:Text' string '\e\r'" ~/Library/Preferences/com.googlecode.iterm2.plist
+    plist=~/Library/Preferences/com.googlecode.iterm2.plist
+    key=":New Bookmarks:0:Keyboard Map:{{ item.key }}"
+    action=$(/usr/libexec/PlistBuddy -c "Print '$key:Action'" "$plist" 2>/dev/null || true)
+    text=$(/usr/libexec/PlistBuddy -c "Print '$key:Text'" "$plist" 2>/dev/null || true)
+    [[ $action == '{{ item.action }}' && $text == '{{ item.text }}' ]] && exit 0
+    /usr/libexec/PlistBuddy -c "Delete '$key'" "$plist" >/dev/null 2>&1 || true
+    /usr/libexec/PlistBuddy -c "Add '$key' dict" \
+      -c "Add '$key:Action' integer {{ item.action }}" \
+      -c "Add '$key:Text' string '{{ item.text }}'" "$plist"
+    echo changed
   args:
     executable: /bin/bash
-  when: iterm2_shift_enter.rc != 0
-  changed_when: true
+  loop: "{{ iterm2_key_mappings }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: iterm2_key_mapping
+  changed_when: "'changed' in iterm2_key_mapping.stdout"
