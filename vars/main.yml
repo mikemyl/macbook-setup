@@ -186,6 +186,15 @@ ssh_hosts_extra: |
       IdentityFile ~/.ssh/id_synology.pub
       IdentitiesOnly yes
 
+  # Home Assistant (home-lab), "Terminal & SSH" add-on. Key "homeassistant" lives in
+  # Bitwarden; public half: ~/.ssh/id_homeassistant.pub (ssh-add -L | grep homeassistant).
+  Host homeassistant homeassistant.fritz.box
+      HostName homeassistant.fritz.box
+      User root
+      IdentityAgent {{ bitwarden_ssh_agent_sock }}
+      IdentityFile ~/.ssh/id_homeassistant.pub
+      IdentitiesOnly yes
+
 # Additional paths to add to PATH
 extra_path_dirs_macos:
   - "{{ ansible_facts['env']['HOME'] }}/go/bin"
