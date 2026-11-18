@@ -195,6 +195,15 @@ ssh_hosts_extra: |
       IdentityFile ~/.ssh/id_homeassistant.pub
       IdentitiesOnly yes
 
+  # LG TV (home-lab), rooted with Homebrew Channel (dropbear). Key "lgtv" lives in
+  # Bitwarden; public half: ~/.ssh/id_lgtv.pub (ssh-add -L | grep lgtv).
+  Host lgtv lgwebostv.fritz.box
+      HostName lgwebostv.fritz.box
+      User root
+      IdentityAgent {{ bitwarden_ssh_agent_sock }}
+      IdentityFile ~/.ssh/id_lgtv.pub
+      IdentitiesOnly yes
+
 # Additional paths to add to PATH
 extra_path_dirs_macos:
   - "{{ ansible_facts['env']['HOME'] }}/go/bin"
