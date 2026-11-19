@@ -16,13 +16,13 @@ are in `homebrew_packages_local` on this machine). The yt-dlp user config
 
 | Tool | Does |
 |---|---|
-| [`patreon-collection`](#patreon-collection) | Downloads all posts of a Patreon collection, in order, with tags |
+| [`patreon-collection`](#patreon-collection) | Downloads all posts of a Patreon collection (or one post), in order, with tags |
 | [`to-mp3`](#to-mp3) | Converts videos to mp3 and keeps the music tags |
 
 ## patreon-collection
 
 ```text
-patreon-collection <collection URL or ID> [--flat] [--videos-only] [--mp3] [yt-dlp options...]
+patreon-collection <collection or post URL, or collection ID> [--flat] [--videos-only] [--mp3] [yt-dlp options...]
 ```
 
 The options can be in any order. Arguments that are not the URL or one of the options
@@ -38,12 +38,18 @@ below go to yt-dlp (for example `-f`, `--limit-rate`, `--simulate`).
 
 `NNN` is the position of the post in the collection.
 
+One post: give the post URL (`https://www.patreon.com/<creator>/posts/<slug>-<id>`, with or
+without `?collection=...`). It downloads the video and all attachments to
+`./<post title>/<files>`, without `NNN`. Album tag = post title. `--flat` has no effect.
+A bare number is always a collection ID.
+
 Examples:
 
 ```bash
 cd ~/Documents/ear_training
 patreon-collection https://www.patreon.com/collection/878272 --flat --mp3
 patreon-collection https://www.patreon.com/collection/1570882 -f 'bv*[height<=1080]+ba'
+patreon-collection https://www.patreon.com/KoreyHicksGuitar/posts/autumn-leaves-1-139552148 --mp3
 ```
 
 What it gets from each post:
@@ -82,6 +88,9 @@ Notes:
 
 - macOS asks once for Keychain access to "Brave Safe Storage". You must be logged in to
   Patreon in Brave.
+- `cannot read Brave cookies` with `could not find brave cookies database`: macOS blocks
+  the terminal from Brave's data folder. Give the terminal app Full Disk Access (System
+  Settings → Privacy & Security → Full Disk Access) and restart it.
 - The script reads the Brave cookies once into a temporary file (mode 600) and deletes
   it on exit, also on Ctrl-C.
 - Each post starts a new yt-dlp process, so a post takes some seconds before the

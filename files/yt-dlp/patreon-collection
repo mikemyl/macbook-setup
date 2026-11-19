@@ -3,9 +3,10 @@
 # through yt-dlp, attachments (PDFs, tabs, diagrams, ...) through the Patreon API.
 # Reads cookies from Brave once, so log in to Patreon in Brave first.
 #
-# Usage: patreon-collection <collection URL or ID> [--flat] [--videos-only] [--mp3] [yt-dlp options...]
+# Usage: patreon-collection <collection or post URL, or collection ID> [--flat] [--videos-only] [--mp3] [yt-dlp options...]
 #        (any order; arguments that are not the URL or these options go to yt-dlp)
 # Example: patreon-collection https://www.patreon.com/collection/878272 -f 'bv*[height<=1080]+ba'
+# Post URL: one post, into ./<post title>/<files> (no NNN, --flat has no effect).
 #
 # Default: one folder per post  ./<collection title>/NNN <post title>/<files>
 # --flat:  one folder for all   ./<collection title>/NNN <file>   (video-only collections)
@@ -22,7 +23,7 @@ UA='Mozilla/5.0'
 here=$(cd "$(dirname "$0")" && pwd)
 API='https://www.patreon.com/api'
 
-usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
+usage() { sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
 # Makes a string safe as one path component.
 clean() {
@@ -37,12 +38,13 @@ clean() {
 
 api() { curl -fsS -g -b "$jar" -A "$UA" "$API/$1&json-api-version=1.0"; }
 
-# Own options can be anywhere. The collection is the first collection URL, or a bare
-# ID as the first other argument. All other arguments go to yt-dlp.
+# Own options can be anywhere. The source is the first collection or post URL, or a bare
+# collection ID as the first other argument. All other arguments go to yt-dlp.
 flat=no
 videos_only=no
 mp3=no
 id=
+post_id=
 first=yes
 ytdlp_args=()
 for a in "$@"; do
@@ -52,16 +54,23 @@ for a in "$@"; do
         --mp3) mp3=yes; continue ;;
         -h | --help) usage ;;
     esac
-    if [[ -z $id && $a =~ /collection/([0-9]+) ]]; then
+    if [[ -z $id$post_id && $a =~ /posts/([^/?#]*-)?([0-9]+) ]]; then
+        post_id=${BASH_REMATCH[2]}
+    elif [[ -z $id$post_id && $a =~ /collection/([0-9]+) ]]; then
         id=${BASH_REMATCH[1]}
-    elif [[ -z $id && $first == yes && $a =~ ^[0-9]+$ ]]; then
+    elif [[ -z $id$post_id && $first == yes && $a =~ ^[0-9]+$ ]]; then
         id=$a
     else
         ytdlp_args+=("$a")
     fi
     first=no
 done
-[[ -n $id ]] || { echo "error: no Patreon collection URL or ID" >&2; usage; }
+[[ -n $id$post_id ]] || { echo "error: no Patreon collection or post URL" >&2; usage; }
+if [[ -n $post_id ]]; then
+    src_url="https://www.patreon.com/posts/$post_id"
+else
+    src_url="https://www.patreon.com/collection/$id"
+fi
 set -- ${ytdlp_args[@]+"${ytdlp_args[@]}"}
 
 # The jar holds all Brave cookies: private dir, deleted on exit.
@@ -71,26 +80,43 @@ trap 'exit 130' INT TERM HUP
 jar=$tmp/cookies.txt
 echo "Reading Brave cookies..."
 yt-dlp --cookies-from-browser brave --cookies "$jar" --simulate -q --no-warnings \
-    "https://www.patreon.com/collection/$id" >/dev/null 2>&1 || true
-[[ -s $jar ]] || { echo "error: cannot read Brave cookies" >&2; exit 1; }
-chmod 600 "$jar"
-
-json=$(api "collection/$id?fields[collection]=title,post_ids") || {
-    echo "error: cannot read collection $id from the Patreon API" >&2
+    "$src_url" >/dev/null 2>"$tmp/err" || true
+[[ -s $jar ]] || {
+    echo "error: cannot read Brave cookies:" >&2
+    grep -m1 ERROR "$tmp/err" >&2 || true
+    echo "(macOS can block access to Brave's data: give your terminal Full Disk Access)" >&2
     exit 1
 }
-title=$(jq -r '.data.attributes.title // empty' <<<"$json")
-read -r -a post_ids <<<"$(jq -r '.data.attributes.post_ids // [] | map(tostring) | join(" ")' <<<"$json")"
+chmod 600 "$jar"
+
+if [[ -n $post_id ]]; then
+    # One post: a list of one, album = post title, files directly in "<post title>/".
+    json=$(api "posts/$post_id?fields[post]=title&json-api-use-default-includes=false") || {
+        echo "error: cannot read post $post_id from the Patreon API" >&2
+        exit 1
+    }
+    title=$(jq -r '.data.attributes.title // empty' <<<"$json")
+    post_ids=("$post_id")
+    flat=yes single=yes name=${title:-post-$post_id}
+else
+    json=$(api "collection/$id?fields[collection]=title,post_ids") || {
+        echo "error: cannot read collection $id from the Patreon API" >&2
+        exit 1
+    }
+    title=$(jq -r '.data.attributes.title // empty' <<<"$json")
+    read -r -a post_ids <<<"$(jq -r '.data.attributes.post_ids // [] | map(tostring) | join(" ")' <<<"$json")"
+    single=no name=${title:-collection-$id}
+fi
 total=${#post_ids[@]}
 [[ $total -gt 0 ]] || { echo "error: collection $id has no visible posts" >&2; exit 1; }
 
-dir=$(clean "${title:-collection-$id}")
+dir=$(clean "$name")
 mkdir -p "$dir"
 cd "$dir"
-echo "Collection: ${title:-$id} ($total posts) -> $PWD"
+echo "${title:-$id} ($total posts) -> $PWD"
 
-# Album tag = collection title, escaped for --parse-metadata FROM (% and : are special).
-album=${title:-collection-$id}
+# Album tag = collection (or post) title, escaped for --parse-metadata FROM (% and : are special).
+album=$name
 album=${album//%/%%}
 album=${album//:/\\:}
 
@@ -116,6 +142,7 @@ for i in "${!post_ids[@]}"; do
     # Per post: files go to "NNN <post title>/". Flat: files go here, named "NNN <file>".
     if [[ $flat == yes ]]; then
         post_dir=. prefix="$num "
+        [[ $single == no ]] || prefix=
     else
         post_dir="$num $(clean "$(jq -r '.data.attributes.title // "untitled"' <<<"$post")")" prefix=
         mkdir -p "$post_dir"
