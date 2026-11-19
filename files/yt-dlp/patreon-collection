@@ -152,6 +152,8 @@ for i in "${!post_ids[@]}"; do
     # Audio/video attachments keep their file name (yt-dlp alt_title, extension removed).
     # Tags: album = collection, track = see below, title = file name, artist = creator.
     # The "@ " prefix makes yt-dlp read FROM as text, not as a field name.
+    # File name: a copy of the title (file_title) with ":" -> " -" and "/" -> "-", as
+    # clean() does for folders and attachments; the title tag keeps the original.
     # Track: NNN + extra. A post with several items is a playlist: item k gets
     # NNN + extra + k - 1 (no playlist_index: one item, NNN + extra). yt-dlp writes the
     # playlist size to $tmp/count also when the items are in archive.txt, so a resume
@@ -163,11 +165,14 @@ for i in "${!post_ids[@]}"; do
         --download-archive "$PWD/archive.txt" -P "$post_dir" \
         --replace-in-metadata alt_title '\.[A-Za-z0-9]{1,5}$' '' \
         --parse-metadata '%(alt_title,title)s:%(meta_title)s' \
+        --parse-metadata 'meta_title:%(file_title)s' \
+        --replace-in-metadata file_title ':' ' -' \
+        --replace-in-metadata file_title '/' '-' \
         --parse-metadata "@ $album:@ (?P<album>.+)" \
         --parse-metadata "%(playlist_index+$((track - 1))|$track)d:%(track_number)s" \
         --print-to-file 'playlist:%(playlist_count)s' "$tmp/count" \
         --embed-metadata \
-        -o "${prefix}%(alt_title,title)s.%(ext)s" \
+        -o "${prefix}%(file_title)s.%(ext)s" \
         "$@" "$url" 2>"$tmp/err" || rc=$?
     cat "$tmp/err" >&2
     if [[ -s $tmp/count ]]; then
