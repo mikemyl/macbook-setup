@@ -171,11 +171,13 @@ ssh_github_identities:
 
 # Non-GitHub ssh hosts, copied verbatim into ~/.ssh/config.
 ssh_hosts_extra: |
-  Host str str.keroshospitality.com analytics analytics.keroshospitality.com keros
+  Host str str.keroshospitality.com analytics analytics.keroshospitality.com keros 46.225.166.91
       Hostname 46.225.166.91
       User root
       ServerAliveInterval 240
       Port 14623
+      IdentityFile ~/.ssh/id_ed25519
+      IdentitiesOnly yes
 
   # Synology NAS (home-lab). Key "synology" lives in Bitwarden; the public half
   # is ~/.ssh/id_synology.pub (export it with: ssh-add -L | grep synololgy).
