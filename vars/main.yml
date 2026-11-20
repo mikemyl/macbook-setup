@@ -36,6 +36,7 @@ homebrew_packages:
   - fzf
   - gh
   - git
+  - gitleaks
   - go
   - golang-migrate
   - googletest
