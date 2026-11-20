@@ -38,6 +38,10 @@
       ansible.builtin.import_tasks: tasks/homebrew.yml
       tags: [homebrew]
 
+    - name: Include global git hooks tasks
+      ansible.builtin.import_tasks: tasks/git-hooks.yml
+      tags: [git]
+
     - name: Include environment setup tasks
       ansible.builtin.import_tasks: tasks/environment.yml
       tags: [environment, env]

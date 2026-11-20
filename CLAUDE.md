@@ -18,6 +18,7 @@ ansible-playbook -i inventory.yml setup.yml --check
 # Run specific tags
 ansible-playbook -i inventory.yml setup.yml --tags shell
 ansible-playbook -i inventory.yml setup.yml --tags homebrew
+ansible-playbook -i inventory.yml setup.yml --tags git       # global hooks: gitleaks pre-commit
 ansible-playbook -i inventory.yml setup.yml --tags development
 ansible-playbook -i inventory.yml setup.yml --tags environment
 ansible-playbook -i inventory.yml setup.yml --tags fonts
@@ -51,6 +52,7 @@ ansible-galaxy collection install community.general
 Each file handles one concern, tagged for independent execution:
 - `shell.yml` - Oh My Zsh, plugins, zshrc, tmux config, iTerm2 key mappings
 - `homebrew.yml` - Homebrew package/cask installation
+- `git-hooks.yml` - Global git hooks (`core.hooksPath` = `~/.config/git/hooks`): gitleaks secret scan before each commit, then the repo's own `.git/hooks/<name>`. A repo with its own `core.hooksPath` (husky) skips it; `git config hooks.gitleaks false` turns the scan off per repo.
 - `environment.yml` - LaunchAgent for GUI app environment variables (SSH_AUTH_SOCK, PATH)
 - `fonts.yml` - Monaco Nerd Font installation
 - `nvim-config.yml` - Neovim init.lua and IdeaVim config

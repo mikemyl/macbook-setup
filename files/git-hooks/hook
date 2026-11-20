@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Global git hook (core.hooksPath, installed by macbook-setup tasks/git-hooks.yml).
+# One script, installed under each hook name. With a global core.hooksPath git no longer
+# runs a repo's own .git/hooks, so this chains to it. A repo that sets its own
+# core.hooksPath (husky, home-lab) overrides this completely.
+set -u
+name="$(basename "$0")"
+
+if [[ $name == pre-commit && "$(git config --bool hooks.gitleaks 2>/dev/null)" != false ]]; then
+  if command -v gitleaks >/dev/null; then
+    # Bypass a false positive per repo with .gitleaks.toml / .gitleaksignore, or turn it off
+    # with: git config hooks.gitleaks false
+    gitleaks git --pre-commit --staged --redact --no-banner --log-level warn . || exit 1
+  else
+    echo "pre-commit: gitleaks not installed, secret scan skipped" >&2
+  fi
+fi
+
+local_hook="$(git rev-parse --git-common-dir)/hooks/$name"
+if [[ -x $local_hook ]]; then
+  exec "$local_hook" "$@"
+fi
+exit 0
